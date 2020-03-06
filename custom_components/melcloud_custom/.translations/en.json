@@ -1,7 +1,7 @@
 {
     "config": {
         "abort": {
-            "already_configured": "MELCloud integration already configured for this email. Access token has been refreshed."
+            "already_configured": "MELCloud integration already configured for this email. Access password has been refreshed."
         },
         "error": {
             "cannot_connect": "Failed to connect, please try again",
@@ -26,3 +26,4 @@
         "title": "MELCloud Custom"
     }
 }
+
