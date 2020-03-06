@@ -4,7 +4,7 @@ A full featured Homeassistant custom component to drive MELCloud AC devices.
 This custom component is based on the native Home Assistant [MELCloud component](https://github.com/home-assistant/core/tree/dev/homeassistant/components/melcloud) released with version 0.106 and on the same underlying [PyMelCloud library](https://github.com/vilppuvuorinen/pymelcloud).
 
 ## Custom component additional features
-I just added some features to the existing native components, waiting for the same features be available on the native component:
+I just added some features to the existing native components, waiting for the same features to be implemented:
 
 1. Login password is stored in the registry during integration configuration. The access token is recreated every time the Home Assistant start and is not stored in the registry. Now you must also provide login language from a list of available options. The language should be the same that you normaly use for other MELCloud application (e.g. your phone app).
 
