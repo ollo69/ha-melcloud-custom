@@ -2,8 +2,8 @@
   "domain": "melcloud_custom",
   "name": "MELCloud Custom",
   "config_flow": true,
-  "documentation": "https://www.home-assistant.io/integrations/melcloud",
+  "documentation": "https://github.com/ollo69/mecloud_custom-ha",
   "requirements": ["pymelcloud==2.4.0"],
   "dependencies": [],
-  "codeowners": ["@vilppuvuorinen"]
+  "codeowners": ["@ollo69"]
 }

@@ -8,7 +8,11 @@
         "data": {
           "username": "Email used to login to MELCloud.",
           "password": "MELCloud password.",
-          "language": "Language"
+          "language": "Language",
+          "wifi_signal": "WiFi signal Sensor",
+          "room_temperature": "Room temperature Sensor",
+          "energy": "Energy consumed Sensor",
+          "error_state": "Error state Sensor"
         }
       }
     },
@@ -18,7 +22,7 @@
       "unknown": "Unexpected error"
     },
     "abort": {
-      "already_configured": "MELCloud integration already configured for this email. Access token has been refreshed."
+      "already_configured": "MELCloud integration already configured for this email. Access password has been refreshed."
     }
   }
 }
