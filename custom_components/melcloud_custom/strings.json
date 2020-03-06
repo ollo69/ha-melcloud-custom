@@ -1,0 +1,33 @@
+{
+  "config": {
+    "title": "MELCloud Custom",
+    "step": {
+      "user": {
+        "title": "Connect to MELCloud",
+        "description": "Connect using your MELCloud account.",
+        "data": {
+          "username": "Email used to login to MELCloud.",
+          "password": "MELCloud password.",
+          "language": "Language"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect, please try again",
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "MELCloud integration already configured for this email. Access token has been refreshed."
+    }
+  },
+  "swing_mode": {
+    "ver_auto": "Vertical Auto",
+    "ver_top": "Vertical Top",
+    "ver_middletop": "Vertical MiddleTop", 
+    "ver_middle": "Vertical Middle",
+    "ver_middlebottom": "Vertical MiddleBottom", 
+    "ver_bottom": "Vertical Bottom",
+    "ver_swing": "Vertical Swing"
+  }
+}
