@@ -19,6 +19,9 @@ ROOM_TEMPERATURE = "room_temperature"
 ENERGY = "energy"
 ERROR_STATE = "error_state"
 
+ATTR_VANE_VERTICAL = "vane_vertical"
+ATTR_VANE_HORIZONTAL = "vane_horizontal"
+
 class Language:
     English = 0
     Bulgarian = 1

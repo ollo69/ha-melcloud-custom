@@ -33,6 +33,8 @@ from .const import (
     HVAC_VVANE_REVERSE_LOOKUP, 
     HVAC_HVANE_LOOKUP, 
     HVAC_HVANE_REVERSE_LOOKUP,
+    ATTR_VANE_VERTICAL,
+    ATTR_VANE_HORIZONTAL,
 )
 
 SCAN_INTERVAL = timedelta(seconds=60)
@@ -242,3 +244,21 @@ class AtaDeviceClimate(ClimateDevice):
         return convert_temperature(
             DEFAULT_MAX_TEMP, TEMP_CELSIUS, self.temperature_unit
         )
+
+    @property
+    def state_attributes(self):
+        """Return the optional state attributes with device specific additions."""
+        data = super().state_attributes
+
+        if self._support_ver_swing:
+            vane_vertical = self._device.vane_vertical
+            if vane_vertical is not None:
+                data[ATTR_VANE_VERTICAL] = HVAC_VVANE_LOOKUP.get(vane_vertical)
+
+        if self._support_hor_swing:
+            vane_horizontal = self._device.vane_horizontal
+            if vane_horizontal is not None:
+                data[ATTR_VANE_HORIZONTAL] = HVAC_HVANE_LOOKUP.get(vane_horizontal)
+
+        return data
+ 
