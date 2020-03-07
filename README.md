@@ -1,3 +1,5 @@
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
+
 # MELCloud HomeAssistant custom component
 A full featured Homeassistant custom component to drive MELCloud AC devices.
 
@@ -19,9 +21,13 @@ I just added some features to the existing native components, waiting for the sa
 1. Added control for Vertical and Horizontal Swing Modes
 
 ## Installation & configuration
-For the moment you can install this only manually. I will try to delivery installation via HACS in the future.
+You can install this component in two ways: via HACS or manually.
 
-### Manually installation (custom_component)
+### Option A: Installing via HACS
+If you have HACS, you must add this repository ("https://github.com/ollo69/mecloud_custom-ha") to your Custom Repository selecting the Configuration Tab in the HACS page.
+After this you can go in the Integration Tab and search the "MELCloud Custom" component to install it.
+
+### Option B: Manually installation (custom_component)
 1. Clone the git master branch.
 1. Unzip/copy the melcloud_custom direcotry within the `custom_components` directory of your homeassistant installation.
 The `custom_components` directory resides within your homeassistant configuration directory.
