@@ -118,8 +118,11 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
     _LOGGER.info("Initializing %s platform with user: %s - language: %s(%s).", DOMAIN, username, language, str(mclanguage))
     
     mcauth = MelCloudAuthentication(username, conf[CONF_PASSWORD], mclanguage)
-    result = await mcauth.login(hass.helpers.aiohttp_client.async_get_clientsession())
-    if result == False:
+    try:
+        result = await mcauth.login(hass.helpers.aiohttp_client.async_get_clientsession())
+        if result == False:
+            raise ConfigEntryNotReady()
+    except:
         raise ConfigEntryNotReady()
 
     token = mcauth.getContextKey()
