@@ -28,7 +28,7 @@ I just added some features to the existing native components, waiting for the sa
 You can install this component in two ways: via HACS or manually.
 
 ### Option A: Installing via HACS
-If you have HACS, you must add this repository ("https://github.com/ollo69/melcloud_custom-ha") to your Custom Repository selecting the Configuration Tab in the HACS page.
+If you have HACS, you must add this repository ("https://github.com/ollo69/ha-melcloud-custom") to your Custom Repository selecting the Configuration Tab in the HACS page.
 After this you can go in the Integration Tab and search the "MELCloud Custom" component to install it.
 
 ### Option B: Manually installation (custom_component)
