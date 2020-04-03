@@ -64,7 +64,6 @@ class AtaDeviceClimate(ClimateDevice):
         self._support_ver_swing = len(self._device.vane_vertical_positions) > 0
         self._support_hor_swing = len(self._device.vane_horizontal_positions) > 0
         self._set_hor_swing = self._support_hor_swing and not self._support_ver_swing
-        self._has_wide_van = self._api.has_wide_van
 
     @property
     def unique_id(self) -> Optional[str]:
@@ -175,32 +174,36 @@ class AtaDeviceClimate(ClimateDevice):
 
     async def async_set_swing_mode(self, swing_mode: str) -> None:
         """Set new target swing mode."""
-        self._set_hor_swing = False
+        is_hor_swing = False
         operation_mode = HVAC_VVANE_REVERSE_LOOKUP.get(swing_mode)
         if operation_mode is None:
             operation_mode = HVAC_HVANE_REVERSE_LOOKUP.get(swing_mode)
             if operation_mode is None:
-                raise ValueError(f"Invalid swing_mode [{swing_mode}]")
+                raise ValueError(f"Invalid swing_mode [{swing_mode}].")
             else:
-                self._set_hor_swing = True
+                is_hor_swing = True
                 curr_mode = self._device.vane_horizontal
+                valid_swing_modes = self._device.vane_horizontal_positions
                 props = {ata_device.PROPERTY_VANE_HORIZONTAL: operation_mode}
         else:
             curr_mode = self._device.vane_vertical
+            valid_swing_modes = self._device.vane_vertical_positions
             props = {ata_device.PROPERTY_VANE_VERTICAL: operation_mode}
-        
-        if curr_mode is None or curr_mode != operation_mode:
-            await self._device.set(props)
+
+        if operation_mode in valid_swing_modes:
+            self._set_hor_swing = is_hor_swing
+            if curr_mode != operation_mode:
+                await self._device.set(props)
+        else:
+            raise ValueError(f"Invalid swing_mode [{swing_mode}].")
 
     @property
     def swing_modes(self) -> Optional[List[str]]:
         """Return the list of available swing modes."""
         list_modes = [HVAC_VVANE_LOOKUP.get(mode) for mode in self._device.vane_vertical_positions]
         for mode in self._device.vane_horizontal_positions:
-            # not sure about this, but I don't have split option and wide van is false!!!
-            if mode != ata_device.H_VANE_POSITION_SPLIT or self._has_wide_van:
-                list_modes.append(HVAC_HVANE_LOOKUP.get(mode))
-        
+            list_modes.append(HVAC_HVANE_LOOKUP.get(mode))
+
         return list_modes
 
     async def async_turn_on(self) -> None:
