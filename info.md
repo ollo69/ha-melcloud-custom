@@ -1,5 +1,5 @@
 # MELCloud HomeAssistant custom component
-A full featured Homeassistant custom component to drive MELCloud AC devices.
+A full featured Homeassistant custom component to drive MELCloud ATA and ATW devices.
 
 This custom component is based on the native Home Assistant [MELCloud component](https://github.com/home-assistant/core/tree/dev/homeassistant/components/melcloud) released with version 0.106 and on the same underlying [PyMelCloud library](https://github.com/vilppuvuorinen/pymelcloud).
 
@@ -8,7 +8,9 @@ I just added some features to the existing native components, waiting for the sa
 
 1. Login password is stored in the registry during integration configuration. The access token is recreated every time the Home Assistant start and is not stored in the registry. Now you must also provide login language from a list of available options. The language should be the same that you normaly use for other MELCloud application (e.g. your phone app).
 
-1. During integration configuration you can choose wich additional sensors you want to be created.
+1. During integration configuration you can choose to not create additional sensors.
+
+1. Added control for **Vertical and Horizontal Swing Modes** on ATA devices using default Swing features.
 
 1. Added sensor to monitor WiFi signal.
 
@@ -16,8 +18,6 @@ I just added some features to the existing native components, waiting for the sa
 
 1. Added some attributes to the sensors to provide additional information (SerialNo, Unit Info, etc)
 
-1. Added control for Vertical and Horizontal Swing Modes
-    
 ## Component setup    
 Once the component has been installed, you need to configure it in order to make it work.
 There are two ways of doing so:
