@@ -18,7 +18,14 @@ from homeassistant.helpers.typing import HomeAssistantType
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 from homeassistant.util import Throttle
 
-from .const import DOMAIN, CONF_LANGUAGE, MEL_DEVICES, WIFI_SIGNAL, ROOM_TEMPERATURE, ENERGY, ERROR_STATE, LANGUAGES, Language
+from .const import (
+    CONF_DISABLE_SENSORS,
+    CONF_LANGUAGE,
+    DOMAIN,
+    LANGUAGES,
+    MEL_DEVICES,
+    Language,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,10 +37,7 @@ MELCLOUD_SCHEMA = vol.Schema({
     vol.Required(CONF_USERNAME): str,
     vol.Required(CONF_PASSWORD): str,
     vol.Required(CONF_LANGUAGE): vol.In(LANGUAGES.keys()),
-    vol.Optional(WIFI_SIGNAL, default=True): bool,
-    vol.Optional(ROOM_TEMPERATURE, default=True): bool,
-    vol.Optional(ENERGY, default=True): bool,
-    vol.Optional(ERROR_STATE, default=True): bool,
+    vol.Optional(CONF_DISABLE_SENSORS, default=False): bool,
     #vol.Required(CONF_TOKEN): cv.string,
 })
 
@@ -80,7 +84,7 @@ class MelCloudAuthentication:
     
         if not req is None:
             if "ErrorId" in req and req["ErrorId"] == None:
-                self._contextkey = req.get("LoginData").get("ContextKey") #reply["LoginData"]["ContextKey"]
+                self._contextkey = req.get("LoginData").get("ContextKey")
                 return True
             else:
                 _LOGGER.error("MELCloud User/Password invalid!")
@@ -127,16 +131,18 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
 
     token = mcauth.getContextKey()
     mel_devices = await mel_devices_setup(hass, token)
-    hass.data.setdefault(DOMAIN, {}).setdefault(entry.entry_id, {}).update({MEL_DEVICES: mel_devices})
-    hass.data.setdefault(DOMAIN, {}).setdefault(entry.entry_id, {}).update({WIFI_SIGNAL: conf[WIFI_SIGNAL]})
-    hass.data.setdefault(DOMAIN, {}).setdefault(entry.entry_id, {}).update({ROOM_TEMPERATURE: conf[ROOM_TEMPERATURE]})
-    hass.data.setdefault(DOMAIN, {}).setdefault(entry.entry_id, {}).update({ENERGY: conf[ENERGY]})
-    hass.data.setdefault(DOMAIN, {}).setdefault(entry.entry_id, {}).update({ERROR_STATE: conf[ERROR_STATE]})
+    hass.data.setdefault(DOMAIN, {}).setdefault(entry.entry_id, {}).update(
+        {
+            MEL_DEVICES: mel_devices,
+        }
+    )
+    disable_sensors = conf.get(CONF_DISABLE_SENSORS, False)
 
     for platform in PLATFORMS:
-        hass.async_create_task(
-            hass.config_entries.async_forward_entry_setup(entry, platform)
-        )
+        if platform == "climate" or not disable_sensors:
+            hass.async_create_task(
+                hass.config_entries.async_forward_entry_setup(entry, platform)
+            )
 
     return True
 

@@ -4,8 +4,8 @@
             "already_configured": "Integrazione MELCloud gi\u00e0 configurata per questa e-mail. La password di accesso \u00e8 stata aggiornata."
         },
         "error": {
-            "cannot_connect": "Impossibile connettersi, si prega di riprovare.",
-            "invalid_auth": "Autenticazione non valida",
+            "cannot_connect": "Impossibile connettersi, si prega di riprovare",
+            "invalid_auth": "Autenticazione non valida, si prega di riprovare",
             "unknown": "Errore imprevisto"
         },
         "step": {
@@ -14,10 +14,7 @@
                     "password": "Password MELCloud.",
                     "username": "Email utilizzata per accedere a MELCloud.",
                     "language": "Lingua",
-                    "wifi_signal": "Sensore segnale WiFi",
-                    "room_temperature": "Sensore temperatura stanza",
-                    "energy": "Sensore energia consumata",
-                    "error_state": "Sensore stato di errore"
+                    "disable_sensors": "Disabilita sensori aggiuntivi"
                 },
                 "description": "Connettiti utilizzando il tuo account MELCloud.",
                 "title": "Connettersi a MELCloud"

@@ -4,12 +4,10 @@ from pymelcloud.const import UNIT_TEMP_CELSIUS, UNIT_TEMP_FAHRENHEIT
 from homeassistant.const import TEMP_CELSIUS, TEMP_FAHRENHEIT
 
 DOMAIN = "melcloud_custom"
-CONF_LANGUAGE = "language"
 MEL_DEVICES = "mel_devices"
-WIFI_SIGNAL = "wifi_signal"
-ROOM_TEMPERATURE = "room_temperature"
-ENERGY = "energy"
-ERROR_STATE = "error_state"
+
+CONF_LANGUAGE = "language"
+CONF_DISABLE_SENSORS = "disable_sensors"
 
 ATTR_VANE_VERTICAL = "vane_vertical"
 ATTR_VANE_HORIZONTAL = "vane_horizontal"

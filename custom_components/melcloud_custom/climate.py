@@ -3,8 +3,14 @@ from datetime import timedelta
 import logging
 from typing import Any, Dict, List, Optional
 
-from pymelcloud import DEVICE_TYPE_ATA, AtaDevice
-import pymelcloud.ata_device as ata_device
+from pymelcloud import DEVICE_TYPE_ATA, DEVICE_TYPE_ATW, AtaDevice, AtwDevice
+import pymelcloud.ata_device as ata
+import pymelcloud.atw_device as atw
+from pymelcloud.atw_device import (
+    PROPERTY_ZONE_1_OPERATION_MODE,
+    PROPERTY_ZONE_2_OPERATION_MODE,
+    Zone,
+)
 from pymelcloud.device import PROPERTY_POWER
 
 from homeassistant.components.climate import ClimateDevice
@@ -43,41 +49,46 @@ SCAN_INTERVAL = timedelta(seconds=60)
 _LOGGER = logging.getLogger(__name__)
 
 
-HVAC_MODE_LOOKUP = {
-    ata_device.OPERATION_MODE_HEAT: HVAC_MODE_HEAT,
-    ata_device.OPERATION_MODE_DRY: HVAC_MODE_DRY,
-    ata_device.OPERATION_MODE_COOL: HVAC_MODE_COOL,
-    ata_device.OPERATION_MODE_FAN_ONLY: HVAC_MODE_FAN_ONLY,
-    ata_device.OPERATION_MODE_HEAT_COOL: HVAC_MODE_HEAT_COOL,
+ATA_HVAC_MODE_LOOKUP = {
+    ata.OPERATION_MODE_HEAT: HVAC_MODE_HEAT,
+    ata.OPERATION_MODE_DRY: HVAC_MODE_DRY,
+    ata.OPERATION_MODE_COOL: HVAC_MODE_COOL,
+    ata.OPERATION_MODE_FAN_ONLY: HVAC_MODE_FAN_ONLY,
+    ata.OPERATION_MODE_HEAT_COOL: HVAC_MODE_HEAT_COOL,
 }
-HVAC_MODE_REVERSE_LOOKUP = {v: k for k, v in HVAC_MODE_LOOKUP.items()}
+ATA_HVAC_MODE_REVERSE_LOOKUP = {v: k for k, v in ATA_HVAC_MODE_LOOKUP.items()}
 
 
-HVAC_VVANE_LOOKUP = {
-    ata_device.V_VANE_POSITION_AUTO: VertSwingModes.Auto,
-    ata_device.V_VANE_POSITION_1: VertSwingModes.Top,
-    ata_device.V_VANE_POSITION_2: VertSwingModes.MiddleTop,
-    ata_device.V_VANE_POSITION_3: VertSwingModes.Middle,
-    ata_device.V_VANE_POSITION_4: VertSwingModes.MiddleBottom,
-    ata_device.V_VANE_POSITION_5: VertSwingModes.Bottom,
-    ata_device.V_VANE_POSITION_SWING: VertSwingModes.Swing,
-    #ata_device.V_VANE_POSITION_UNDEFINED: "undefined",
+ATA_HVAC_VVANE_LOOKUP = {
+    ata.V_VANE_POSITION_AUTO: VertSwingModes.Auto,
+    ata.V_VANE_POSITION_1: VertSwingModes.Top,
+    ata.V_VANE_POSITION_2: VertSwingModes.MiddleTop,
+    ata.V_VANE_POSITION_3: VertSwingModes.Middle,
+    ata.V_VANE_POSITION_4: VertSwingModes.MiddleBottom,
+    ata.V_VANE_POSITION_5: VertSwingModes.Bottom,
+    ata.V_VANE_POSITION_SWING: VertSwingModes.Swing,
 }
-HVAC_VVANE_REVERSE_LOOKUP = {v: k for k, v in HVAC_VVANE_LOOKUP.items()}
+ATA_HVAC_VVANE_REVERSE_LOOKUP = {v: k for k, v in ATA_HVAC_VVANE_LOOKUP.items()}
 
 
-HVAC_HVANE_LOOKUP = {
-    ata_device.H_VANE_POSITION_AUTO: HorSwingModes.Auto,
-    ata_device.H_VANE_POSITION_1: HorSwingModes.Left,
-    ata_device.H_VANE_POSITION_2: HorSwingModes.MiddleLeft,
-    ata_device.H_VANE_POSITION_3: HorSwingModes.Middle,
-    ata_device.H_VANE_POSITION_4: HorSwingModes.MiddleRight,
-    ata_device.H_VANE_POSITION_5: HorSwingModes.Right,
-    ata_device.H_VANE_POSITION_SPLIT: HorSwingModes.Split,
-    ata_device.H_VANE_POSITION_SWING: HorSwingModes.Swing,
-    #ata_device.V_VANE_POSITION_UNDEFINED: "undefined",
+ATA_HVAC_HVANE_LOOKUP = {
+    ata.H_VANE_POSITION_AUTO: HorSwingModes.Auto,
+    ata.H_VANE_POSITION_1: HorSwingModes.Left,
+    ata.H_VANE_POSITION_2: HorSwingModes.MiddleLeft,
+    ata.H_VANE_POSITION_3: HorSwingModes.Middle,
+    ata.H_VANE_POSITION_4: HorSwingModes.MiddleRight,
+    ata.H_VANE_POSITION_5: HorSwingModes.Right,
+    ata.H_VANE_POSITION_SPLIT: HorSwingModes.Split,
+    ata.H_VANE_POSITION_SWING: HorSwingModes.Swing,
 }
-HVAC_HVANE_REVERSE_LOOKUP = {v: k for k, v in HVAC_HVANE_LOOKUP.items()}
+ATA_HVAC_HVANE_REVERSE_LOOKUP = {v: k for k, v in ATA_HVAC_HVANE_LOOKUP.items()}
+
+
+ATW_ZONE_HVAC_MODE_LOOKUP = {
+    atw.ZONE_OPERATION_MODE_HEAT: HVAC_MODE_HEAT,
+    atw.ZONE_OPERATION_MODE_COOL: HVAC_MODE_COOL,
+}
+ATW_ZONE_HVAC_MODE_REVERSE_LOOKUP = {v: k for k, v in ATW_ZONE_HVAC_MODE_LOOKUP.items()}
 
 
 async def async_setup_entry(
@@ -89,6 +100,11 @@ async def async_setup_entry(
         [
             AtaDeviceClimate(mel_device, mel_device.device)
             for mel_device in mel_devices[DEVICE_TYPE_ATA]
+        ]
+        + [
+            AtwDeviceZoneClimate(mel_device, mel_device.device, zone)
+            for mel_device in mel_devices[DEVICE_TYPE_ATW]
+            for zone in mel_device.device.zones
         ],
         True,
     )
@@ -147,13 +163,13 @@ class AtaDeviceClimate(MelCloudClimate):
         vane_horizontal = self._device.vane_horizontal
         if vane_horizontal:
             attr.update(
-                {ATTR_VANE_HORIZONTAL: HVAC_HVANE_LOOKUP.get(vane_horizontal, None)}
+                {ATTR_VANE_HORIZONTAL: ATA_HVAC_HVANE_LOOKUP.get(vane_horizontal, None)}
             )
 
         vane_vertical = self._device.vane_vertical
         if vane_vertical:
             attr.update(
-                {ATTR_VANE_VERTICAL: HVAC_VVANE_LOOKUP.get(vane_vertical, None)}
+                {ATTR_VANE_VERTICAL: ATA_HVAC_VVANE_LOOKUP.get(vane_vertical, None)}
             )
         return attr
 
@@ -168,7 +184,7 @@ class AtaDeviceClimate(MelCloudClimate):
         mode = self._device.operation_mode
         if not self._device.power or mode is None:
             return HVAC_MODE_OFF
-        return HVAC_MODE_LOOKUP.get(mode)
+        return ATA_HVAC_MODE_LOOKUP.get(mode)
 
     async def async_set_hvac_mode(self, hvac_mode: str) -> None:
         """Set new target hvac mode."""
@@ -176,11 +192,11 @@ class AtaDeviceClimate(MelCloudClimate):
             await self._device.set({PROPERTY_POWER: False})
             return
 
-        operation_mode = HVAC_MODE_REVERSE_LOOKUP.get(hvac_mode)
+        operation_mode = ATA_HVAC_MODE_REVERSE_LOOKUP.get(hvac_mode)
         if operation_mode is None:
             raise ValueError(f"Invalid hvac_mode [{hvac_mode}]")
 
-        props = {ata_device.PROPERTY_OPERATION_MODE: operation_mode}
+        props = {ata.PROPERTY_OPERATION_MODE: operation_mode}
         if self.hvac_mode == HVAC_MODE_OFF:
             props[PROPERTY_POWER] = True
         await self._device.set(props)
@@ -189,7 +205,7 @@ class AtaDeviceClimate(MelCloudClimate):
     def hvac_modes(self) -> List[str]:
         """Return the list of available hvac operation modes."""
         return [HVAC_MODE_OFF] + [
-            HVAC_MODE_LOOKUP.get(mode) for mode in self._device.operation_modes
+            ATA_HVAC_MODE_LOOKUP.get(mode) for mode in self._device.operation_modes
         ]
 
     @property
@@ -205,7 +221,7 @@ class AtaDeviceClimate(MelCloudClimate):
     async def async_set_temperature(self, **kwargs) -> None:
         """Set new target temperature."""
         await self._device.set(
-            {ata_device.PROPERTY_TARGET_TEMPERATURE: kwargs.get("temperature", self.target_temperature)}
+            {ata.PROPERTY_TARGET_TEMPERATURE: kwargs.get("temperature", self.target_temperature)}
         )
 
     @property
@@ -215,7 +231,7 @@ class AtaDeviceClimate(MelCloudClimate):
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         """Set new target fan mode."""
-        await self._device.set({ata_device.PROPERTY_FAN_SPEED: fan_mode})
+        await self._device.set({ata.PROPERTY_FAN_SPEED: fan_mode})
 
     @property
     def fan_modes(self) -> Optional[List[str]]:
@@ -229,11 +245,11 @@ class AtaDeviceClimate(MelCloudClimate):
         if self._set_hor_swing and self._support_hor_swing:
             mode = self._device.vane_horizontal
             if mode is not None:
-                swing = HVAC_HVANE_LOOKUP.get(mode)
+                swing = ATA_HVAC_HVANE_LOOKUP.get(mode)
         elif self._support_ver_swing:
             mode = self._device.vane_vertical
             if mode is not None:
-                swing = HVAC_VVANE_LOOKUP.get(mode)
+                swing = ATA_HVAC_VVANE_LOOKUP.get(mode)
             
         if swing is None:
             return "Auto"
@@ -243,20 +259,20 @@ class AtaDeviceClimate(MelCloudClimate):
     async def async_set_swing_mode(self, swing_mode: str) -> None:
         """Set new target swing mode."""
         is_hor_swing = False
-        operation_mode = HVAC_VVANE_REVERSE_LOOKUP.get(swing_mode)
+        operation_mode = ATA_HVAC_VVANE_REVERSE_LOOKUP.get(swing_mode)
         if operation_mode is None:
-            operation_mode = HVAC_HVANE_REVERSE_LOOKUP.get(swing_mode)
+            operation_mode = ATA_HVAC_HVANE_REVERSE_LOOKUP.get(swing_mode)
             if operation_mode is None:
                 raise ValueError(f"Invalid swing_mode [{swing_mode}].")
 
             is_hor_swing = True
             curr_mode = self._device.vane_horizontal
             valid_swing_modes = self._device.vane_horizontal_positions
-            props = {ata_device.PROPERTY_VANE_HORIZONTAL: operation_mode}
+            props = {ata.PROPERTY_VANE_HORIZONTAL: operation_mode}
         else:
             curr_mode = self._device.vane_vertical
             valid_swing_modes = self._device.vane_vertical_positions
-            props = {ata_device.PROPERTY_VANE_VERTICAL: operation_mode}
+            props = {ata.PROPERTY_VANE_VERTICAL: operation_mode}
 
         if operation_mode not in valid_swing_modes:
             raise ValueError(f"Invalid swing_mode [{swing_mode}].")
@@ -269,10 +285,11 @@ class AtaDeviceClimate(MelCloudClimate):
     def swing_modes(self) -> Optional[List[str]]:
         """Return the list of available swing modes."""
         list_modes = [
-            HVAC_VVANE_LOOKUP.get(mode) for mode in self._device.vane_vertical_positions
+            ATA_HVAC_VVANE_LOOKUP.get(mode)
+            for mode in self._device.vane_vertical_positions
         ]
         for mode in self._device.vane_horizontal_positions:
-            list_modes.append(HVAC_HVANE_LOOKUP.get(mode))
+            list_modes.append(ATA_HVAC_HVANE_LOOKUP.get(mode))
 
         return list_modes
 
@@ -317,4 +334,108 @@ class AtaDeviceClimate(MelCloudClimate):
         return convert_temperature(
             DEFAULT_MAX_TEMP, TEMP_CELSIUS, self.temperature_unit
         )
- 
+
+
+class AtwDeviceZoneClimate(MelCloudClimate):
+    """Air-to-Water zone climate device."""
+
+    def __init__(
+        self, device: MelCloudDevice, atw_device: AtwDevice, atw_zone: Zone
+    ) -> None:
+        """Initialize the climate."""
+        super().__init__(device)
+        self._device = atw_device
+        self._zone = atw_zone
+
+    @property
+    def unique_id(self) -> Optional[str]:
+        """Return a unique ID."""
+        return f"{self.api.device.serial}-{self._zone.zone_index}"
+
+    @property
+    def name(self) -> str:
+        """Return the display name of this entity."""
+        return f"{self._name} {self._zone.name}"
+
+    @property
+    def device_state_attributes(self) -> Dict[str, Any]:
+        """Return the optional state attributes with device specific additions."""
+        data = {
+            ATTR_STATUS: ATW_ZONE_HVAC_MODE_LOOKUP.get(
+                self._zone.status, self._zone.status
+            )
+        }
+        return data
+
+    @property
+    def temperature_unit(self) -> str:
+        """Return the unit of measurement used by the platform."""
+        return TEMP_UNIT_LOOKUP.get(self._device.temp_unit, TEMP_CELSIUS)
+
+    @property
+    def hvac_mode(self) -> str:
+        """Return hvac operation ie. heat, cool mode."""
+        mode = self._zone.operation_mode
+        if not self._device.power or mode is None:
+            return HVAC_MODE_OFF
+        return ATW_ZONE_HVAC_MODE_LOOKUP.get(mode, HVAC_MODE_OFF)
+
+    async def async_set_hvac_mode(self, hvac_mode: str) -> None:
+        """Set new target hvac mode."""
+        if hvac_mode == HVAC_MODE_OFF:
+            await self._device.set({"power": False})
+            return
+
+        operation_mode = ATW_ZONE_HVAC_MODE_REVERSE_LOOKUP.get(hvac_mode)
+        if operation_mode is None:
+            raise ValueError(f"Invalid hvac_mode [{hvac_mode}]")
+
+        if self._zone.zone_index == 1:
+            props = {PROPERTY_ZONE_1_OPERATION_MODE: operation_mode}
+        else:
+            props = {PROPERTY_ZONE_2_OPERATION_MODE: operation_mode}
+        if self.hvac_mode == HVAC_MODE_OFF:
+            props["power"] = True
+        await self._device.set(props)
+
+    @property
+    def hvac_modes(self) -> List[str]:
+        """Return the list of available hvac operation modes."""
+        return [self.hvac_mode]
+
+    @property
+    def current_temperature(self) -> Optional[float]:
+        """Return the current temperature."""
+        return self._zone.room_temperature
+
+    @property
+    def target_temperature(self) -> Optional[float]:
+        """Return the temperature we try to reach."""
+        return self._zone.target_temperature
+
+    async def async_set_temperature(self, **kwargs) -> None:
+        """Set new target temperature."""
+        await self._zone.set_target_temperature(
+            kwargs.get("temperature", self.target_temperature)
+        )
+
+    @property
+    def supported_features(self) -> int:
+        """Return the list of supported features."""
+        return SUPPORT_TARGET_TEMPERATURE
+
+    @property
+    def min_temp(self) -> float:
+        """Return the minimum temperature.
+
+        MELCloud API does not expose radiator zone temperature limits.
+        """
+        return convert_temperature(10, TEMP_CELSIUS, self.temperature_unit)
+
+    @property
+    def max_temp(self) -> float:
+        """Return the maximum temperature.
+
+        MELCloud API does not expose radiator zone temperature limits.
+        """
+        return convert_temperature(30, TEMP_CELSIUS, self.temperature_unit)

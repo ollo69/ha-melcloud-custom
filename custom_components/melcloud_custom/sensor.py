@@ -1,14 +1,15 @@
 """Support for MelCloud device sensors."""
 import logging
 
-from pymelcloud.const import DEVICE_TYPE_ATA
+from pymelcloud import DEVICE_TYPE_ATA, DEVICE_TYPE_ATW
+from pymelcloud.atw_device import Zone
 
 from homeassistant.const import DEVICE_CLASS_TEMPERATURE, TEMP_CELSIUS, STATE_ON, STATE_OFF
 from homeassistant.components.binary_sensor import DEVICE_CLASS_PROBLEM
 from homeassistant.helpers.entity import Entity
 
 from . import MelCloudDevice
-from .const import DOMAIN, MEL_DEVICES, TEMP_UNIT_LOOKUP, WIFI_SIGNAL, ROOM_TEMPERATURE, ENERGY, ERROR_STATE
+from .const import DOMAIN, MEL_DEVICES, TEMP_UNIT_LOOKUP
 
 ATTR_MEASUREMENT_NAME = "measurement_name"
 ATTR_ICON = "icon"
@@ -36,8 +37,8 @@ ATTR_STATE_DEVICE_UNIT = [
     },
 ]
 
-SENSORS = {
-    WIFI_SIGNAL: {
+ATA_SENSORS = {
+    "wifi_signal": {
         ATTR_MEASUREMENT_NAME: "WiFi Signal",
         ATTR_ICON: "mdi:signal",
         ATTR_UNIT_FN: lambda x: "dBm",
@@ -45,7 +46,7 @@ SENSORS = {
         ATTR_VALUE_FN: lambda x: x.wifi_signal,
         ATTR_ENABLED_FN: lambda x: True,
     },
-    ROOM_TEMPERATURE: {
+    "room_temperature": {
         ATTR_MEASUREMENT_NAME: "Room Temperature",
         ATTR_ICON: "mdi:thermometer",
         ATTR_UNIT_FN: lambda x: TEMP_UNIT_LOOKUP.get(x.device.temp_unit, TEMP_CELSIUS),
@@ -53,7 +54,7 @@ SENSORS = {
         ATTR_VALUE_FN: lambda x: x.device.room_temperature,
         ATTR_ENABLED_FN: lambda x: True,
     },
-    ENERGY: {
+    "energy": {
         ATTR_MEASUREMENT_NAME: "Energy",
         ATTR_ICON: "mdi:factory",
         ATTR_UNIT_FN: lambda x: "kWh",
@@ -63,8 +64,8 @@ SENSORS = {
     },
 }
 
-BINARY_SENSORS = {
-    ERROR_STATE: {
+ATA_BINARY_SENSORS = {
+    "error_state": {
         ATTR_MEASUREMENT_NAME: "Error State",
         ATTR_ICON: None,
         ATTR_UNIT_FN: lambda x: None,
@@ -74,28 +75,75 @@ BINARY_SENSORS = {
     },
 }
 
+ATW_SENSORS = {
+    "outside_temperature": {
+        ATTR_MEASUREMENT_NAME: "Outside Temperature",
+        ATTR_ICON: "mdi:thermometer",
+        ATTR_UNIT_FN: lambda x: TEMP_UNIT_LOOKUP.get(x.device.temp_unit, TEMP_CELSIUS),
+        ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
+        ATTR_VALUE_FN: lambda x: x.device.outside_temperature,
+        ATTR_ENABLED_FN: lambda x: True,
+    },
+    "tank_temperature": {
+        ATTR_MEASUREMENT_NAME: "Tank Temperature",
+        ATTR_ICON: "mdi:thermometer",
+        ATTR_UNIT_FN: lambda x: TEMP_UNIT_LOOKUP.get(x.device.temp_unit, TEMP_CELSIUS),
+        ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
+        ATTR_VALUE_FN: lambda x: x.device.tank_temperature,
+        ATTR_ENABLED_FN: lambda x: True,
+    },
+}
+
+ATW_ZONE_SENSORS = {
+    "room_temperature": {
+        ATTR_MEASUREMENT_NAME: "Room Temperature",
+        ATTR_ICON: "mdi:thermometer",
+        ATTR_UNIT_FN: lambda x: TEMP_UNIT_LOOKUP.get(x.device.temp_unit, TEMP_CELSIUS),
+        ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
+        ATTR_VALUE_FN: lambda zone: zone.room_temperature,
+        ATTR_ENABLED_FN: lambda x: True,
+    }
+}
+
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_sensors(hass, entry, async_add_entities, type_binary):
-    """Set up MELCloud device sensors based on config_entry."""
-    sensors_list = BINARY_SENSORS if type_binary else SENSORS
-    
-    mel_devices = hass.data[DOMAIN][entry.entry_id].get(MEL_DEVICES)
+    """Set up MELCloud device sensors and bynary sensor based on config_entry."""
+    entry_config = hass.data[DOMAIN][entry.entry_id]
+    ata_sensors = ATA_BINARY_SENSORS if type_binary else ATA_SENSORS
+    atw_sensors = {} if type_binary else ATW_SENSORS
+
+    mel_devices = entry_config.get(MEL_DEVICES)
     async_add_entities(
         [
-            MelCloudSensor(mel_device, measurement, definition, type_binary)
-            for measurement, definition in sensors_list.items()
+            MelDeviceSensor(mel_device, measurement, definition, type_binary)
+            for measurement, definition in ata_sensors.items()
             for mel_device in mel_devices[DEVICE_TYPE_ATA]
-            if definition[ATTR_ENABLED_FN](mel_device) and hass.data[DOMAIN][entry.entry_id][measurement]
+            if definition[ATTR_ENABLED_FN](mel_device)
+        ]
+        + [
+            MelDeviceSensor(mel_device, measurement, definition, type_binary)
+            for measurement, definition in atw_sensors.items()
+            for mel_device in mel_devices[DEVICE_TYPE_ATW]
+            if definition[ATTR_ENABLED_FN](mel_device)
+        ]
+        + [
+            AtwZoneSensor(mel_device, zone, measurement, definition)
+            for mel_device in mel_devices[DEVICE_TYPE_ATW]
+            for zone in mel_device.device.zones
+            for measurement, definition, in ATW_ZONE_SENSORS.items()
+            if definition[ATTR_ENABLED_FN](zone) and not type_binary
         ],
         True,
     )
 
 async def async_setup_entry(hass, entry, async_add_entities):
+    """Set up MELCloud device sensors based on config_entry."""
     await async_setup_sensors(hass, entry, async_add_entities, False)
 
-class MelCloudSensor(Entity):
+
+class MelDeviceSensor(Entity):
     """Representation of a Sensor."""
 
     def __init__(self, device: MelCloudDevice, measurement, definition, isbinary):
@@ -164,12 +212,29 @@ class MelCloudSensor(Entity):
         data[ATTR_STATE_DEVICE_SERIAL] = self._api.device.serial
         data[ATTR_STATE_DEVICE_MAC] = self._api.device.mac
         #data[ATTR_DEVICE_LAST_SEEN] = self._api.device.last_seen
-        
+
         unit_infos = self._api.device.units
         if unit_infos is not None:
             for i, u in enumerate(unit_infos):
                 if i < 2:
                     data[ATTR_STATE_DEVICE_UNIT[i][ATTR_STATE_UMODEL]] = u[ATTR_STATE_UMODEL]
                     data[ATTR_STATE_DEVICE_UNIT[i][ATTR_STATE_USERIAL]] = u[ATTR_STATE_USERIAL]
-        
+
         return data
+
+
+class AtwZoneSensor(MelDeviceSensor):
+    """Air-to-Air device sensor."""
+
+    def __init__(
+        self, api: MelCloudDevice, zone: Zone, measurement, definition,
+    ):
+        """Initialize the sensor."""
+        super().__init__(api, measurement, definition, False)
+        self._zone = zone
+        self._name_slug = f"{api.name} {zone.name}"
+
+    @property
+    def state(self):
+        """Return zone based state."""
+        return self._def[ATTR_VALUE_FN](self._zone)
