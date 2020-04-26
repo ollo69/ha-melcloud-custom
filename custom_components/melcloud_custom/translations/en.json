@@ -1,0 +1,26 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "MELCloud integration already configured for this email. Access password has been refreshed."
+        },
+        "error": {
+            "cannot_connect": "Failed to connect, please try again",
+            "invalid_auth": "Invalid authentication, please try again",
+            "unknown": "Unexpected error"
+        },
+        "step": {
+            "user": {
+                "data": {
+                    "username": "Email used to login to MELCloud.",
+                    "password": "MELCloud password.",
+                    "language": "Language",
+                    "disable_sensors": "Disable additional sensors"
+                },
+                "description": "Connect using your MELCloud account.",
+                "title": "Connect to MELCloud"
+            }
+        },
+        "title": "MELCloud Custom"
+    }
+}
+
