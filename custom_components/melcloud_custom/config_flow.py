@@ -5,11 +5,9 @@ from typing import Optional
 
 from aiohttp import ClientError, ClientResponseError
 from async_timeout import timeout
-import pymelcloud
-import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_PASSWORD, CONF_TOKEN, CONF_USERNAME
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import callback
 
 from .const import DOMAIN, CONF_LANGUAGE, LANGUAGES  # pylint: disable=unused-import

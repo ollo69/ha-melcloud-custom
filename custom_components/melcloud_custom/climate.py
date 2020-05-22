@@ -13,7 +13,6 @@ from pymelcloud.atw_device import (
 )
 from pymelcloud.device import PROPERTY_POWER
 
-from homeassistant.components.climate import ClimateDevice
 from homeassistant.components.climate.const import (
     DEFAULT_MAX_TEMP,
     DEFAULT_MIN_TEMP,
@@ -35,6 +34,7 @@ from homeassistant.util.temperature import convert as convert_temperature
 
 from . import MelCloudDevice
 from .const import (
+    ATTR_STATUS,
     ATTR_VANE_VERTICAL,
     ATTR_VANE_HORIZONTAL,
     DOMAIN, 
@@ -43,6 +43,11 @@ from .const import (
     HorSwingModes,
     VertSwingModes,
 )
+
+try:
+    from homeassistant.components.climate import ClimateEntity
+except ImportError:
+    from homeassistant.components.climate import ClimateDevice as ClimateEntity
 
 SCAN_INTERVAL = timedelta(seconds=60)
 
@@ -110,7 +115,7 @@ async def async_setup_entry(
     )
 
 
-class MelCloudClimate(ClimateDevice):
+class MelCloudClimate(ClimateEntity):
     """Base climate device."""
 
     def __init__(self, device: MelCloudDevice):

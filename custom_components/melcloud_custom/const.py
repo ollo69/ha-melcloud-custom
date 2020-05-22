@@ -9,6 +9,7 @@ MEL_DEVICES = "mel_devices"
 CONF_LANGUAGE = "language"
 CONF_DISABLE_SENSORS = "disable_sensors"
 
+ATTR_STATUS = "status"
 ATTR_VANE_VERTICAL = "vane_vertical"
 ATTR_VANE_HORIZONTAL = "vane_horizontal"
 

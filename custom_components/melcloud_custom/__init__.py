@@ -11,9 +11,8 @@ from pymelcloud.client import BASE_URL
 import voluptuous as vol
 
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
-from homeassistant.const import CONF_TOKEN, CONF_USERNAME, CONF_PASSWORD
+from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
 from homeassistant.exceptions import ConfigEntryNotReady
-import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.typing import HomeAssistantType
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 from homeassistant.util import Throttle
@@ -96,6 +95,7 @@ class MelCloudAuthentication:
     def getContextKey(self):
         return self._contextkey
 
+
 async def async_setup(hass: HomeAssistantType, config: ConfigEntry):
     """Establish connection with MELCloud."""
     if DOMAIN not in config:
@@ -112,6 +112,7 @@ async def async_setup(hass: HomeAssistantType, config: ConfigEntry):
     )
     return True
 
+
 async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
     """Establish connection with MELClooud."""
     conf = entry.data
@@ -119,7 +120,13 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
     language = conf[CONF_LANGUAGE]
     mclanguage = LANGUAGES[language]
 
-    _LOGGER.info("Initializing %s platform with user: %s - language: %s(%s).", DOMAIN, username, language, str(mclanguage))
+    _LOGGER.info(
+        "Initializing %s platform with user: %s - language: %s(%s).",
+        DOMAIN,
+        username,
+        language,
+        str(mclanguage)
+    )
     
     mcauth = MelCloudAuthentication(username, conf[CONF_PASSWORD], mclanguage)
     try:
