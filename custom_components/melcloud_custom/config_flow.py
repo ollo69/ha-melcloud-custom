@@ -1,7 +1,6 @@
 """Config flow for the MELCloud platform."""
 import asyncio
 import logging
-from typing import Optional
 
 from aiohttp import ClientError, ClientResponseError
 from async_timeout import timeout
@@ -41,7 +40,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         password = user_input[CONF_PASSWORD]
         language = user_input[CONF_LANGUAGE]
 
-        if password is None: #and token is None:
+        if password is None:  # and token is None:
             raise ValueError(
                 "Invalid internal state. Called without password",
             )
@@ -49,7 +48,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         try:
             with timeout(10):
                 result = await self._test_authorization(username, password, language)
-                if result == False:
+                if not result:
                     return self._show_form({"base": "invalid_auth"})
 
         except ClientResponseError as err:

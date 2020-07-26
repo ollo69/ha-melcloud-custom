@@ -1,7 +1,4 @@
 """Constants for the MELCloud Climate integration."""
-from pymelcloud.const import UNIT_TEMP_CELSIUS, UNIT_TEMP_FAHRENHEIT
-
-from homeassistant.const import TEMP_CELSIUS, TEMP_FAHRENHEIT
 
 DOMAIN = "melcloud_custom"
 MEL_DEVICES = "mel_devices"
@@ -69,37 +66,32 @@ class Language:
     Romanian = 24
     Slovenian = 25
 
-LANGUAGES = {
-    'EN' : Language.English,
-    'BG' : Language.Bulgarian,
-    'CS' : Language.Czech,
-    'DA' : Language.Danish,
-    'DE' : Language.German,
-    'ET' : Language.Estonian,
-    'ES' : Language.Spanish,
-    'FR' : Language.French,
-    'HY' : Language.Armenian,
-    'LV' : Language.Latvian,
-    'LT' : Language.Lithuanian,
-    'HU' : Language.Hungarian,
-    'NL' : Language.Dutch,
-    'NO' : Language.Norwegian,
-    'PL' : Language.Polish,
-    'PT' : Language.Portuguese,
-    'RU' : Language.Russian,
-    'FI' : Language.Finnish,
-    'SV' : Language.Swedish,
-    'IT' : Language.Italian,
-    'UK' : Language.Ukrainian,
-    'TR' : Language.Turkish,
-    'EL' : Language.Greek,
-    'HR' : Language.Croatian,
-    'RO' : Language.Romanian,
-    'SL' : Language.Slovenian,
-}
 
-TEMP_UNIT_LOOKUP = {
-    UNIT_TEMP_CELSIUS: TEMP_CELSIUS,
-    UNIT_TEMP_FAHRENHEIT: TEMP_FAHRENHEIT,
+LANGUAGES = {
+    'EN': Language.English,
+    'BG': Language.Bulgarian,
+    'CS': Language.Czech,
+    'DA': Language.Danish,
+    'DE': Language.German,
+    'ET': Language.Estonian,
+    'ES': Language.Spanish,
+    'FR': Language.French,
+    'HY': Language.Armenian,
+    'LV': Language.Latvian,
+    'LT': Language.Lithuanian,
+    'HU': Language.Hungarian,
+    'NL': Language.Dutch,
+    'NO': Language.Norwegian,
+    'PL': Language.Polish,
+    'PT': Language.Portuguese,
+    'RU': Language.Russian,
+    'FI': Language.Finnish,
+    'SV': Language.Swedish,
+    'IT': Language.Italian,
+    'UK': Language.Ukrainian,
+    'TR': Language.Turkish,
+    'EL': Language.Greek,
+    'HR': Language.Croatian,
+    'RO': Language.Romanian,
+    'SL': Language.Slovenian,
 }
-TEMP_UNIT_REVERSE_LOOKUP = {v: k for k, v in TEMP_UNIT_LOOKUP.items()}

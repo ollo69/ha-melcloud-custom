@@ -49,6 +49,7 @@ CONFIG_SCHEMA = vol.Schema(
 
 #BASE_URL = "https://app.melcloud.com/Mitsubishi.Wifi.Client"
 
+
 class MelCloudAuthentication:
     def __init__(self, email, password, language = Language.English):
         self._email = email
@@ -131,7 +132,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
     mcauth = MelCloudAuthentication(username, conf[CONF_PASSWORD], mclanguage)
     try:
         result = await mcauth.login(hass.helpers.aiohttp_client.async_get_clientsession())
-        if result == False:
+        if not result:
             raise ConfigEntryNotReady()
     except:
         raise ConfigEntryNotReady()
@@ -152,6 +153,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
             )
 
     return True
+
 
 async def async_unload_entry(hass, config_entry):
     """Unload a config entry."""
@@ -220,11 +222,7 @@ class MelCloudDevice:
         """Return wifi signal."""
         if self.device._device_conf is None:
             return None
-        device = self.device._device_conf.get("Device", {})
-        reading = device.get("WifiSignalStrength", None)
-        if reading is None:
-            return None
-        return reading
+        return self.device._device_conf.get("Device", {}).get("WifiSignalStrength", None)
 
     @property
     def error_state(self) -> Optional[bool]:
@@ -260,6 +258,7 @@ class MelCloudDevice:
         _device_info["model"] = model
         
         return _device_info
+
 
 async def mel_devices_setup(hass, token) -> List[MelCloudDevice]:
     """Query connected devices from MELCloud."""

@@ -4,16 +4,22 @@ import logging
 from pymelcloud import DEVICE_TYPE_ATA, DEVICE_TYPE_ATW
 from pymelcloud.atw_device import Zone
 
-from homeassistant.const import DEVICE_CLASS_TEMPERATURE, TEMP_CELSIUS, STATE_ON, STATE_OFF
+from homeassistant.const import (
+    DEVICE_CLASS_TEMPERATURE,
+    ENERGY_KILO_WATT_HOUR,
+    TEMP_CELSIUS,
+    STATE_ON,
+    STATE_OFF
+)
 from homeassistant.components.binary_sensor import DEVICE_CLASS_PROBLEM
 from homeassistant.helpers.entity import Entity
 
 from . import MelCloudDevice
-from .const import DOMAIN, MEL_DEVICES, TEMP_UNIT_LOOKUP
+from .const import DOMAIN, MEL_DEVICES
 
 ATTR_MEASUREMENT_NAME = "measurement_name"
 ATTR_ICON = "icon"
-ATTR_UNIT_FN = "unit_fn"
+ATTR_UNIT = "unit"
 ATTR_DEVICE_CLASS = "device_class"
 ATTR_VALUE_FN = "value_fn"
 ATTR_ENABLED_FN = "enabled"
@@ -41,7 +47,7 @@ ATA_SENSORS = {
     "wifi_signal": {
         ATTR_MEASUREMENT_NAME: "WiFi Signal",
         ATTR_ICON: "mdi:signal",
-        ATTR_UNIT_FN: lambda x: "dBm",
+        ATTR_UNIT: "dBm",
         ATTR_DEVICE_CLASS: None,
         ATTR_VALUE_FN: lambda x: x.wifi_signal,
         ATTR_ENABLED_FN: lambda x: True,
@@ -49,7 +55,7 @@ ATA_SENSORS = {
     "room_temperature": {
         ATTR_MEASUREMENT_NAME: "Room Temperature",
         ATTR_ICON: "mdi:thermometer",
-        ATTR_UNIT_FN: lambda x: TEMP_UNIT_LOOKUP.get(x.device.temp_unit, TEMP_CELSIUS),
+        ATTR_UNIT: TEMP_CELSIUS,
         ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
         ATTR_VALUE_FN: lambda x: x.device.room_temperature,
         ATTR_ENABLED_FN: lambda x: True,
@@ -57,7 +63,7 @@ ATA_SENSORS = {
     "energy": {
         ATTR_MEASUREMENT_NAME: "Energy",
         ATTR_ICON: "mdi:factory",
-        ATTR_UNIT_FN: lambda x: "kWh",
+        ATTR_UNIT: ENERGY_KILO_WATT_HOUR,
         ATTR_DEVICE_CLASS: None,
         ATTR_VALUE_FN: lambda x: x.device.total_energy_consumed,
         ATTR_ENABLED_FN: lambda x: x.device.has_energy_consumed_meter,
@@ -68,7 +74,7 @@ ATA_BINARY_SENSORS = {
     "error_state": {
         ATTR_MEASUREMENT_NAME: "Error State",
         ATTR_ICON: None,
-        ATTR_UNIT_FN: lambda x: None,
+        ATTR_UNIT: None,
         ATTR_DEVICE_CLASS: DEVICE_CLASS_PROBLEM,
         ATTR_VALUE_FN: lambda x: x.error_state,
         ATTR_ENABLED_FN: lambda x: True,
@@ -79,7 +85,7 @@ ATW_SENSORS = {
     "outside_temperature": {
         ATTR_MEASUREMENT_NAME: "Outside Temperature",
         ATTR_ICON: "mdi:thermometer",
-        ATTR_UNIT_FN: lambda x: TEMP_UNIT_LOOKUP.get(x.device.temp_unit, TEMP_CELSIUS),
+        ATTR_UNIT: TEMP_CELSIUS,
         ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
         ATTR_VALUE_FN: lambda x: x.device.outside_temperature,
         ATTR_ENABLED_FN: lambda x: True,
@@ -87,7 +93,7 @@ ATW_SENSORS = {
     "tank_temperature": {
         ATTR_MEASUREMENT_NAME: "Tank Temperature",
         ATTR_ICON: "mdi:thermometer",
-        ATTR_UNIT_FN: lambda x: TEMP_UNIT_LOOKUP.get(x.device.temp_unit, TEMP_CELSIUS),
+        ATTR_UNIT: TEMP_CELSIUS,
         ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
         ATTR_VALUE_FN: lambda x: x.device.tank_temperature,
         ATTR_ENABLED_FN: lambda x: True,
@@ -98,17 +104,33 @@ ATW_ZONE_SENSORS = {
     "room_temperature": {
         ATTR_MEASUREMENT_NAME: "Room Temperature",
         ATTR_ICON: "mdi:thermometer",
-        ATTR_UNIT_FN: lambda x: TEMP_UNIT_LOOKUP.get(x.device.temp_unit, TEMP_CELSIUS),
+        ATTR_UNIT: TEMP_CELSIUS,
         ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
         ATTR_VALUE_FN: lambda zone: zone.room_temperature,
         ATTR_ENABLED_FN: lambda x: True,
-    }
+    },
+    "flow_temperature": {
+        ATTR_MEASUREMENT_NAME: "Flow Temperature",
+        ATTR_ICON: "mdi:thermometer",
+        ATTR_UNIT: TEMP_CELSIUS,
+        ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
+        ATTR_VALUE_FN: lambda zone: zone.flow_temperature,
+        ATTR_ENABLED_FN: lambda x: True,
+    },
+    "return_temperature": {
+        ATTR_MEASUREMENT_NAME: "Flow Return Temperature",
+        ATTR_ICON: "mdi:thermometer",
+        ATTR_UNIT: TEMP_CELSIUS,
+        ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
+        ATTR_VALUE_FN: lambda zone: zone.return_temperature,
+        ATTR_ENABLED_FN: lambda x: True,
+    },
 }
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_sensors(hass, entry, async_add_entities, type_binary):
+async def async_setup_sensors(hass, entry, async_add_entities, type_binary, init_status=False):
     """Set up MELCloud device sensors and bynary sensor based on config_entry."""
     entry_config = hass.data[DOMAIN][entry.entry_id]
     ata_sensors = ATA_BINARY_SENSORS if type_binary else ATA_SENSORS
@@ -135,8 +157,9 @@ async def async_setup_sensors(hass, entry, async_add_entities, type_binary):
             for measurement, definition, in ATW_ZONE_SENSORS.items()
             if definition[ATTR_ENABLED_FN](zone) and not type_binary
         ],
-        True,
+        init_status,
     )
+
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up MELCloud device sensors based on config_entry."""
@@ -188,7 +211,7 @@ class MelDeviceSensor(Entity):
     @property
     def unit_of_measurement(self):
         """Return the unit of measurement."""
-        return self._def[ATTR_UNIT_FN](self._api)
+        return self._def[ATTR_UNIT]
 
     @property
     def device_class(self):
@@ -207,11 +230,12 @@ class MelDeviceSensor(Entity):
     @property
     def state_attributes(self):
         """Return the optional state attributes."""
-        data={}
-        data[ATTR_STATE_DEVICE_ID] = self._api.device_id
-        data[ATTR_STATE_DEVICE_SERIAL] = self._api.device.serial
-        data[ATTR_STATE_DEVICE_MAC] = self._api.device.mac
-        #data[ATTR_DEVICE_LAST_SEEN] = self._api.device.last_seen
+        data = {
+            ATTR_STATE_DEVICE_ID: self._api.device_id,
+            ATTR_STATE_DEVICE_SERIAL: self._api.device.serial,
+            ATTR_STATE_DEVICE_MAC: self._api.device.mac,
+            # data[ATTR_DEVICE_LAST_SEEN] = self._api.device.last_seen
+        }
 
         unit_infos = self._api.device.units
         if unit_infos is not None:

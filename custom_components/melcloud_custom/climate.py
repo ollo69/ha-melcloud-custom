@@ -22,7 +22,7 @@ from homeassistant.components.climate.const import (
     HVAC_MODE_HEAT,
     HVAC_MODE_HEAT_COOL,
     HVAC_MODE_OFF,
-    SUPPORT_PRESET_MODE,
+    # SUPPORT_PRESET_MODE,
     SUPPORT_FAN_MODE,
     SUPPORT_SWING_MODE,
     SUPPORT_TARGET_TEMPERATURE,
@@ -30,7 +30,6 @@ from homeassistant.components.climate.const import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import TEMP_CELSIUS
 from homeassistant.helpers.typing import HomeAssistantType
-from homeassistant.util.temperature import convert as convert_temperature
 
 from . import MelCloudDevice
 from .const import (
@@ -39,7 +38,6 @@ from .const import (
     ATTR_VANE_HORIZONTAL,
     DOMAIN, 
     MEL_DEVICES, 
-    TEMP_UNIT_LOOKUP, 
     HorSwingModes,
     VertSwingModes,
 )
@@ -181,7 +179,7 @@ class AtaDeviceClimate(MelCloudClimate):
     @property
     def temperature_unit(self) -> str:
         """Return the unit of measurement used by the platform."""
-        return TEMP_UNIT_LOOKUP.get(self._device.temp_unit, TEMP_CELSIUS)
+        return TEMP_CELSIUS
 
     @property
     def hvac_mode(self) -> str:
@@ -313,8 +311,8 @@ class AtaDeviceClimate(MelCloudClimate):
         if self._support_ver_swing or self._support_hor_swing:
             supp_feature |= SUPPORT_SWING_MODE
 
-        #if self._support_hor_swing == True:
-        #    supp_feature |= SUPPORT_PRESET_MODE
+        # if self._support_hor_swing == True:
+        #     supp_feature |= SUPPORT_PRESET_MODE
         
         return supp_feature
 
@@ -325,9 +323,7 @@ class AtaDeviceClimate(MelCloudClimate):
         if min_value is not None:
             return min_value
 
-        return convert_temperature(
-            DEFAULT_MIN_TEMP, TEMP_CELSIUS, self.temperature_unit
-        )
+        return DEFAULT_MIN_TEMP
 
     @property
     def max_temp(self) -> float:
@@ -336,17 +332,13 @@ class AtaDeviceClimate(MelCloudClimate):
         if max_value is not None:
             return max_value
 
-        return convert_temperature(
-            DEFAULT_MAX_TEMP, TEMP_CELSIUS, self.temperature_unit
-        )
+        return DEFAULT_MAX_TEMP
 
 
 class AtwDeviceZoneClimate(MelCloudClimate):
     """Air-to-Water zone climate device."""
 
-    def __init__(
-        self, device: MelCloudDevice, atw_device: AtwDevice, atw_zone: Zone
-    ) -> None:
+    def __init__(self, device: MelCloudDevice, atw_device: AtwDevice, atw_zone: Zone):
         """Initialize the climate."""
         super().__init__(device)
         self._device = atw_device
@@ -375,7 +367,7 @@ class AtwDeviceZoneClimate(MelCloudClimate):
     @property
     def temperature_unit(self) -> str:
         """Return the unit of measurement used by the platform."""
-        return TEMP_UNIT_LOOKUP.get(self._device.temp_unit, TEMP_CELSIUS)
+        return TEMP_CELSIUS
 
     @property
     def hvac_mode(self) -> str:
@@ -435,7 +427,7 @@ class AtwDeviceZoneClimate(MelCloudClimate):
 
         MELCloud API does not expose radiator zone temperature limits.
         """
-        return convert_temperature(10, TEMP_CELSIUS, self.temperature_unit)
+        return 10
 
     @property
     def max_temp(self) -> float:
@@ -443,4 +435,4 @@ class AtwDeviceZoneClimate(MelCloudClimate):
 
         MELCloud API does not expose radiator zone temperature limits.
         """
-        return convert_temperature(30, TEMP_CELSIUS, self.temperature_unit)
+        return 30
