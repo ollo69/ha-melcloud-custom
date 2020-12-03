@@ -1,0 +1,25 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "MELCloud integrationen är redan konfigurerad för detta kontot. Inloggningsuppgifterna har laddats om."
+        },
+        "error": {
+            "cannot_connect": " Kunde inte ansluta, försök igen",
+            "invalid_auth": " Ogiltig autentisering, försök igen",
+            "unknown": "Oväntat fel"
+        },
+        "step": {
+            "user": {
+                "data": {
+                    "username": "E-post för att logga in på MELCloud.",
+                    "password": "MELCloud lösenord.",
+                    "language": "Språk",
+                    "disable_sensors": " Inaktivera ytterligare sensorer"
+                },
+                "description": " Anslut med ditt MELCloud konto.",
+                "title": "Anslut till MELCloud"
+            }
+        },
+        "title": "MELCloud Custom"
+    }
+}
