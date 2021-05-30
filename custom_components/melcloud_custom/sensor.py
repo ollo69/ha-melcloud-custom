@@ -23,6 +23,7 @@ ATTR_UNIT = "unit"
 ATTR_DEVICE_CLASS = "device_class"
 ATTR_VALUE_FN = "value_fn"
 ATTR_ENABLED_FN = "enabled"
+ATTR_ENABLED_DEF = "enabled_default"
 
 ATTR_STATE_DEVICE_ID = "device_id"
 ATTR_STATE_DEVICE_SERIAL = "device_serial"
@@ -78,6 +79,7 @@ ATA_BINARY_SENSORS = {
         ATTR_DEVICE_CLASS: DEVICE_CLASS_PROBLEM,
         ATTR_VALUE_FN: lambda x: x.error_state,
         ATTR_ENABLED_FN: lambda x: True,
+        ATTR_ENABLED_DEF: True,
     },
 }
 
@@ -97,6 +99,7 @@ ATW_SENSORS = {
         ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
         ATTR_VALUE_FN: lambda x: x.device.tank_temperature,
         ATTR_ENABLED_FN: lambda x: True,
+        ATTR_ENABLED_DEF: True,
     },
 }
 
@@ -176,6 +179,11 @@ class MelDeviceSensor(Entity):
         self._measurement = measurement
         self._def = definition
         self._isbinary = isbinary
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        """Return if the entity should be enabled when first added to the entity registry."""
+        return self._def.get(ATTR_ENABLED_DEF, False)
 
     @property
     def unique_id(self):

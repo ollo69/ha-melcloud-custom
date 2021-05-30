@@ -14,8 +14,6 @@ I just added some features to the existing native components, waiting for the sa
 
 1. Login password is stored in the registry during integration configuration. The access token is recreated every time the Home Assistant start and is not stored in the registry. Now you must also provide login language from a list of available options. The language should be the same that you normaly use for other MELCloud application (e.g. your phone app).
 
-1. During integration configuration you can choose to not create additional sensors.
-
 1. Added control for **Vertical and Horizontal Swing Modes** on ATA devices using default Swing features.
 
 1. Added sensor to monitor WiFi signal.

@@ -2,9 +2,9 @@
   "domain": "melcloud_custom",
   "name": "MELCloud Custom",
   "config_flow": true,
-  "documentation": "https://github.com/ollo69/ha-mecloud-custom",
-  "issue_tracker": "https://github.com/ollo69/ha-mecloud-custom/issues",
+  "documentation": "https://github.com/ollo69/ha-melcloud-custom",
+  "issue_tracker": "https://github.com/ollo69/ha-melcloud-custom/issues",
   "requirements": ["pymelcloud==2.5.2"],
   "codeowners": ["@ollo69"],
-  "version": "0.1.9"
+  "version": "0.1.10"
 }
