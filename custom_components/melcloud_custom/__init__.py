@@ -18,7 +18,6 @@ from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 from homeassistant.util import Throttle
 
 from .const import (
-    CONF_DISABLE_SENSORS,
     CONF_LANGUAGE,
     DOMAIN,
     LANGUAGES,
@@ -36,8 +35,6 @@ MELCLOUD_SCHEMA = vol.Schema({
     vol.Required(CONF_USERNAME): str,
     vol.Required(CONF_PASSWORD): str,
     vol.Required(CONF_LANGUAGE): vol.In(LANGUAGES.keys()),
-    vol.Optional(CONF_DISABLE_SENSORS, default=False): bool,
-    #vol.Required(CONF_TOKEN): cv.string,
 })
 
 CONFIG_SCHEMA = vol.Schema(
@@ -115,7 +112,7 @@ async def async_setup(hass: HomeAssistantType, config: ConfigEntry):
 
 
 async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
-    """Establish connection with MELClooud."""
+    """Establish connection with MELCloud."""
     conf = entry.data
     username = conf[CONF_USERNAME]
     language = conf[CONF_LANGUAGE]
@@ -134,8 +131,8 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
         result = await mcauth.login(hass.helpers.aiohttp_client.async_get_clientsession())
         if not result:
             raise ConfigEntryNotReady()
-    except:
-        raise ConfigEntryNotReady()
+    except Exception as ex:
+        raise ConfigEntryNotReady() from ex
 
     token = mcauth.getContextKey()
     mel_devices = await mel_devices_setup(hass, token)
@@ -144,29 +141,20 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
             MEL_DEVICES: mel_devices,
         }
     )
-    disable_sensors = conf.get(CONF_DISABLE_SENSORS, False)
-
-    for platform in PLATFORMS:
-        if platform == "climate" or not disable_sensors:
-            hass.async_create_task(
-                hass.config_entries.async_forward_entry_setup(entry, platform)
-            )
+    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
     return True
 
 
 async def async_unload_entry(hass, config_entry):
     """Unload a config entry."""
-    await asyncio.gather(
-        *[
-            hass.config_entries.async_forward_entry_unload(config_entry, platform)
-            for platform in PLATFORMS
-        ]
+    unload_ok = await hass.config_entries.async_unload_platforms(
+        config_entry, PLATFORMS
     )
     hass.data[DOMAIN].pop(config_entry.entry_id)
     if not hass.data[DOMAIN]:
         hass.data.pop(DOMAIN)
-    return True
+    return unload_ok
 
 
 class MelCloudDevice:
@@ -260,7 +248,7 @@ class MelCloudDevice:
         return _device_info
 
 
-async def mel_devices_setup(hass, token) -> List[MelCloudDevice]:
+async def mel_devices_setup(hass, token) -> Dict[str, List[MelCloudDevice]]:
     """Query connected devices from MELCloud."""
     session = hass.helpers.aiohttp_client.async_get_clientsession()
     try:

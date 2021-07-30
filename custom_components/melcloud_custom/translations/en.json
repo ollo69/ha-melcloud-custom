@@ -13,8 +13,7 @@
                 "data": {
                     "username": "Email used to login to MELCloud.",
                     "password": "MELCloud password.",
-                    "language": "Language",
-                    "disable_sensors": "Disable additional sensors"
+                    "language": "Language"
                 },
                 "description": "Connect using your MELCloud account.",
                 "title": "Connect to MELCloud"

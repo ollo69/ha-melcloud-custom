@@ -4,8 +4,8 @@
   "config_flow": true,
   "documentation": "https://github.com/ollo69/ha-melcloud-custom",
   "issue_tracker": "https://github.com/ollo69/ha-melcloud-custom/issues",
-  "requirements": ["pymelcloud==2.5.2"],
+  "requirements": ["pymelcloud==2.5.3"],
   "codeowners": ["@ollo69"],
   "iot_class": "cloud_polling",
-  "version": "0.1.11"
+  "version": "0.1.12"
 }

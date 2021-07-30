@@ -14,8 +14,14 @@ from pymelcloud.atw_device import (
 from pymelcloud.device import PROPERTY_POWER
 
 from homeassistant.components.climate.const import (
+    CURRENT_HVAC_COOL,
+    CURRENT_HVAC_DRY,
+    CURRENT_HVAC_FAN,
+    CURRENT_HVAC_HEAT,
+    CURRENT_HVAC_OFF,
     DEFAULT_MAX_TEMP,
     DEFAULT_MIN_TEMP,
+    HVAC_MODE_AUTO,
     HVAC_MODE_COOL,
     HVAC_MODE_DRY,
     HVAC_MODE_FAN_ONLY,
@@ -61,6 +67,14 @@ ATA_HVAC_MODE_LOOKUP = {
 }
 ATA_HVAC_MODE_REVERSE_LOOKUP = {v: k for k, v in ATA_HVAC_MODE_LOOKUP.items()}
 
+HA_STATE_TO_CURRENT_HVAC = {
+    HVAC_MODE_COOL: CURRENT_HVAC_COOL,
+    HVAC_MODE_DRY: CURRENT_HVAC_DRY,
+    HVAC_MODE_FAN_ONLY: CURRENT_HVAC_FAN,
+    HVAC_MODE_HEAT: CURRENT_HVAC_HEAT,
+    HVAC_MODE_OFF: CURRENT_HVAC_OFF,
+}
+
 
 ATA_HVAC_VVANE_LOOKUP = {
     ata.V_VANE_POSITION_AUTO: VertSwingModes.Auto,
@@ -99,18 +113,21 @@ async def async_setup_entry(
 ):
     """Set up MelCloud device climate based on config_entry."""
     mel_devices = hass.data[DOMAIN][entry.entry_id].get(MEL_DEVICES)
-    async_add_entities(
+    entities = []
+    entities.extend(
         [
             AtaDeviceClimate(mel_device, mel_device.device)
             for mel_device in mel_devices[DEVICE_TYPE_ATA]
         ]
-        + [
+    )
+    entities.extend(
+        [
             AtwDeviceZoneClimate(mel_device, mel_device.device, zone)
             for mel_device in mel_devices[DEVICE_TYPE_ATW]
             for zone in mel_device.device.zones
-        ],
-        True,
+        ]
     )
+    async_add_entities(entities, True)
 
 
 class MelCloudClimate(ClimateEntity):
@@ -136,6 +153,11 @@ class MelCloudClimate(ClimateEntity):
         """Return the supported step of target temperature."""
         return self._base_device.temperature_increment
 
+    @property
+    def temperature_unit(self) -> str:
+        """Return the unit of measurement used by the platform."""
+        return TEMP_CELSIUS
+
 
 class AtaDeviceClimate(MelCloudClimate):
     """Air-to-Air climate device."""
@@ -147,6 +169,7 @@ class AtaDeviceClimate(MelCloudClimate):
         self._support_ver_swing = len(self._device.vane_vertical_positions) > 0
         self._support_hor_swing = len(self._device.vane_horizontal_positions) > 0
         self._set_hor_swing = self._support_hor_swing and not self._support_ver_swing
+        self._curr_hvac_action = None
 
     @property
     def unique_id(self) -> Optional[str]:
@@ -177,17 +200,23 @@ class AtaDeviceClimate(MelCloudClimate):
         return attr
 
     @property
-    def temperature_unit(self) -> str:
-        """Return the unit of measurement used by the platform."""
-        return TEMP_CELSIUS
-
-    @property
     def hvac_mode(self) -> str:
         """Return hvac operation ie. heat, cool mode."""
-        mode = self._device.operation_mode
-        if not self._device.power or mode is None:
-            return HVAC_MODE_OFF
-        return ATA_HVAC_MODE_LOOKUP.get(mode)
+        op_mode = self._device.operation_mode
+        if not self._device.power or op_mode is None:
+            mode = HVAC_MODE_OFF
+        else:
+            mode = ATA_HVAC_MODE_LOOKUP.get(op_mode, HVAC_MODE_AUTO)
+        self._curr_hvac_action = HA_STATE_TO_CURRENT_HVAC.get(mode)
+        return mode
+
+    @property
+    def hvac_action(self) -> Optional[str]:
+        """Return the current running hvac operation if supported.
+
+        Need to be one of CURRENT_HVAC_*.
+        """
+        return self._curr_hvac_action
 
     async def async_set_hvac_mode(self, hvac_mode: str) -> None:
         """Set new target hvac mode."""
@@ -311,9 +340,6 @@ class AtaDeviceClimate(MelCloudClimate):
         if self._support_ver_swing or self._support_hor_swing:
             supp_feature |= SUPPORT_SWING_MODE
 
-        # if self._support_hor_swing == True:
-        #     supp_feature |= SUPPORT_PRESET_MODE
-        
         return supp_feature
 
     @property
@@ -363,11 +389,6 @@ class AtwDeviceZoneClimate(MelCloudClimate):
             )
         }
         return data
-
-    @property
-    def temperature_unit(self) -> str:
-        """Return the unit of measurement used by the platform."""
-        return TEMP_CELSIUS
 
     @property
     def hvac_mode(self) -> str:
