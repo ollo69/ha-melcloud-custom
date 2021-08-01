@@ -7,5 +7,5 @@
   "requirements": ["pymelcloud==2.5.3"],
   "codeowners": ["@ollo69"],
   "iot_class": "cloud_polling",
-  "version": "0.1.12"
+  "version": "0.1.13"
 }

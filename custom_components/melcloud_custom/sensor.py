@@ -233,9 +233,7 @@ class MelDeviceSensor(Entity):
 
     async def async_update(self):
         """Retrieve latest state."""
-        # await self._api.async_update()
-        # update is done by main device, so here we do nothing
-        return
+        await self._api.async_update()
 
     @property
     def device_info(self):
