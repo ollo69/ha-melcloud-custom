@@ -25,6 +25,25 @@ from .const import (
     Language,
 )
 
+ATTR_STATE_DEVICE_ID = "device_id"
+ATTR_STATE_DEVICE_SERIAL = "device_serial"
+ATTR_STATE_DEVICE_MAC = "device_mac"
+ATTR_STATE_DEVICE_LAST_SEEN = "last_communication"
+
+ATTR_STATE_UMODEL = "model"
+ATTR_STATE_USERIAL = "serial_number"
+
+ATTR_STATE_DEVICE_UNIT = [
+    {
+      ATTR_STATE_UMODEL: "unit",
+      ATTR_STATE_USERIAL: "unit_serial",
+    },
+    {
+      ATTR_STATE_UMODEL: "ext_unit",
+      ATTR_STATE_USERIAL: "ext_unit_serial",
+    },
+]
+
 _LOGGER = logging.getLogger(__name__)
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=60)
@@ -165,6 +184,7 @@ class MelCloudDevice:
         self.device = device
         self.name = device.name
         self._available = True
+        self._extra_attributes = None
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def async_update(self, **kwargs):
@@ -237,7 +257,7 @@ class MelCloudDevice:
             "name": self.name,
             "connections": {(CONNECTION_NETWORK_MAC, self.device.mac)},
         }
-        model = "MELCloud IF (MAC: %s)" % (self.device.mac)
+        model = f"MELCloud IF (MAC: {self.device.mac})"
         unit_infos = self.device.units
         if unit_infos is not None:
             model = model + " - " + ", ".join(
@@ -246,6 +266,29 @@ class MelCloudDevice:
         _device_info["model"] = model
         
         return _device_info
+
+    @property
+    def extra_attributes(self):
+        """Return the optional state attributes."""
+        if self._extra_attributes:
+            return self._extra_attributes
+
+        data = {
+            ATTR_STATE_DEVICE_ID: self.device_id,
+            ATTR_STATE_DEVICE_SERIAL: self.device.serial,
+            ATTR_STATE_DEVICE_MAC: self.device.mac,
+            # data[ATTR_DEVICE_LAST_SEEN] = self._api.device.last_seen
+        }
+
+        unit_infos = self.device.units
+        if unit_infos is not None:
+            for i, u in enumerate(unit_infos):
+                if i < 2:
+                    data[ATTR_STATE_DEVICE_UNIT[i][ATTR_STATE_UMODEL]] = u[ATTR_STATE_UMODEL]
+                    data[ATTR_STATE_DEVICE_UNIT[i][ATTR_STATE_USERIAL]] = u[ATTR_STATE_USERIAL]
+            self._extra_attributes = data
+
+        return data
 
 
 async def mel_devices_setup(hass, token) -> Dict[str, List[MelCloudDevice]]:

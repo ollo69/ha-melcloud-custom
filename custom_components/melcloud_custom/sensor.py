@@ -1,239 +1,197 @@
 """Support for MelCloud device sensors."""
+from __future__ import annotations
+
+from dataclasses import dataclass
 import logging
+from typing import Any, Callable
 
 from pymelcloud import DEVICE_TYPE_ATA, DEVICE_TYPE_ATW
 from pymelcloud.atw_device import Zone
 
-from homeassistant.const import (
+from homeassistant.components.sensor import (
+    DEVICE_CLASS_ENERGY,
+    DEVICE_CLASS_SIGNAL_STRENGTH,
     DEVICE_CLASS_TEMPERATURE,
+    STATE_CLASS_MEASUREMENT,
+    STATE_CLASS_TOTAL_INCREASING,
+    SensorEntity,
+    SensorEntityDescription,
+)
+from homeassistant.const import (
     ENERGY_KILO_WATT_HOUR,
     TEMP_CELSIUS,
-    STATE_ON,
-    STATE_OFF
+    SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
 )
-from homeassistant.components.binary_sensor import DEVICE_CLASS_PROBLEM
-from homeassistant.core import callback
-from homeassistant.helpers.entity import Entity
 
 from . import MelCloudDevice
 from .const import DOMAIN, MEL_DEVICES
 
-ATTR_MEASUREMENT_NAME = "measurement_name"
-ATTR_ICON = "icon"
-ATTR_UNIT = "unit"
-ATTR_DEVICE_CLASS = "device_class"
-ATTR_VALUE_FN = "value_fn"
-ATTR_ENABLED_FN = "enabled"
-ATTR_ENABLED_DEF = "enabled_default"
 
-ATTR_STATE_DEVICE_ID = "device_id"
-ATTR_STATE_DEVICE_SERIAL = "device_serial"
-ATTR_STATE_DEVICE_MAC = "device_mac"
-ATTR_STATE_DEVICE_LAST_SEEN = "last_communication"
+@dataclass
+class MelcloudRequiredKeysMixin:
+    """Mixin for required keys."""
 
-ATTR_STATE_UMODEL = "model"
-ATTR_STATE_USERIAL = "serial_number"
+    value_fn: Callable[[Any], float]
+    enabled: Callable[[Any], bool]
 
-ATTR_STATE_DEVICE_UNIT = [
-    { 
-      ATTR_STATE_UMODEL: "unit",
-      ATTR_STATE_USERIAL: "unit_serial",
-    },
-    { 
-      ATTR_STATE_UMODEL: "ext_unit",
-      ATTR_STATE_USERIAL: "ext_unit_serial",
-    },
-]
 
-ATA_SENSORS = {
-    "wifi_signal": {
-        ATTR_MEASUREMENT_NAME: "WiFi Signal",
-        ATTR_ICON: "mdi:signal",
-        ATTR_UNIT: "dBm",
-        ATTR_DEVICE_CLASS: None,
-        ATTR_VALUE_FN: lambda x: x.wifi_signal,
-        ATTR_ENABLED_FN: lambda x: True,
-    },
-    "room_temperature": {
-        ATTR_MEASUREMENT_NAME: "Room Temperature",
-        ATTR_ICON: "mdi:thermometer",
-        ATTR_UNIT: TEMP_CELSIUS,
-        ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
-        ATTR_VALUE_FN: lambda x: x.device.room_temperature,
-        ATTR_ENABLED_FN: lambda x: True,
-    },
-    "energy": {
-        ATTR_MEASUREMENT_NAME: "Energy",
-        ATTR_ICON: "mdi:factory",
-        ATTR_UNIT: ENERGY_KILO_WATT_HOUR,
-        ATTR_DEVICE_CLASS: None,
-        ATTR_VALUE_FN: lambda x: x.device.total_energy_consumed,
-        ATTR_ENABLED_FN: lambda x: x.device.has_energy_consumed_meter,
-    },
-}
+@dataclass
+class MelcloudSensorEntityDescription(
+    SensorEntityDescription, MelcloudRequiredKeysMixin
+):
+    """Describes Melcloud sensor entity."""
 
-ATA_BINARY_SENSORS = {
-    "error_state": {
-        ATTR_MEASUREMENT_NAME: "Error State",
-        ATTR_ICON: None,
-        ATTR_UNIT: None,
-        ATTR_DEVICE_CLASS: DEVICE_CLASS_PROBLEM,
-        ATTR_VALUE_FN: lambda x: x.error_state,
-        ATTR_ENABLED_FN: lambda x: True,
-        ATTR_ENABLED_DEF: True,
-    },
-}
 
-ATW_SENSORS = {
-    "outside_temperature": {
-        ATTR_MEASUREMENT_NAME: "Outside Temperature",
-        ATTR_ICON: "mdi:thermometer",
-        ATTR_UNIT: TEMP_CELSIUS,
-        ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
-        ATTR_VALUE_FN: lambda x: x.device.outside_temperature,
-        ATTR_ENABLED_FN: lambda x: True,
-    },
-    "tank_temperature": {
-        ATTR_MEASUREMENT_NAME: "Tank Temperature",
-        ATTR_ICON: "mdi:thermometer",
-        ATTR_UNIT: TEMP_CELSIUS,
-        ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
-        ATTR_VALUE_FN: lambda x: x.device.tank_temperature,
-        ATTR_ENABLED_FN: lambda x: True,
-        ATTR_ENABLED_DEF: True,
-    },
-}
-
-ATW_ZONE_SENSORS = {
-    "room_temperature": {
-        ATTR_MEASUREMENT_NAME: "Room Temperature",
-        ATTR_ICON: "mdi:thermometer",
-        ATTR_UNIT: TEMP_CELSIUS,
-        ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
-        ATTR_VALUE_FN: lambda zone: zone.room_temperature,
-        ATTR_ENABLED_FN: lambda x: True,
-    },
-    "flow_temperature": {
-        ATTR_MEASUREMENT_NAME: "Flow Temperature",
-        ATTR_ICON: "mdi:thermometer",
-        ATTR_UNIT: TEMP_CELSIUS,
-        ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
-        ATTR_VALUE_FN: lambda zone: zone.flow_temperature,
-        ATTR_ENABLED_FN: lambda x: True,
-    },
-    "return_temperature": {
-        ATTR_MEASUREMENT_NAME: "Flow Return Temperature",
-        ATTR_ICON: "mdi:thermometer",
-        ATTR_UNIT: TEMP_CELSIUS,
-        ATTR_DEVICE_CLASS: DEVICE_CLASS_TEMPERATURE,
-        ATTR_VALUE_FN: lambda zone: zone.return_temperature,
-        ATTR_ENABLED_FN: lambda x: True,
-    },
-}
+ATA_SENSORS: tuple[MelcloudSensorEntityDescription, ...] = (
+    MelcloudSensorEntityDescription(
+        key="wifi_signal",
+        name="WiFi Signal",
+        icon="mdi:signal",
+        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+        state_class=STATE_CLASS_MEASUREMENT,
+        device_class=DEVICE_CLASS_SIGNAL_STRENGTH,
+        value_fn=lambda x: x.wifi_signal,
+        enabled=lambda x: True,
+        entity_registry_enabled_default=False,
+    ),
+    MelcloudSensorEntityDescription(
+        key="room_temperature",
+        name="Room Temperature",
+        icon="mdi:thermometer",
+        native_unit_of_measurement=TEMP_CELSIUS,
+        state_class=STATE_CLASS_MEASUREMENT,
+        device_class=DEVICE_CLASS_TEMPERATURE,
+        value_fn=lambda x: x.device.room_temperature,
+        enabled=lambda x: True,
+        entity_registry_enabled_default=False,
+    ),
+    MelcloudSensorEntityDescription(
+        key="energy",
+        name="Energy",
+        icon="mdi:factory",
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        state_class=STATE_CLASS_TOTAL_INCREASING,
+        device_class=DEVICE_CLASS_ENERGY,
+        value_fn=lambda x: x.device.total_energy_consumed,
+        enabled=lambda x: x.device.has_energy_consumed_meter,
+        entity_registry_enabled_default=False,
+    ),
+)
+ATW_SENSORS: tuple[MelcloudSensorEntityDescription, ...] = (
+    MelcloudSensorEntityDescription(
+        key="outside_temperature",
+        name="Outside Temperature",
+        icon="mdi:thermometer",
+        native_unit_of_measurement=TEMP_CELSIUS,
+        state_class=STATE_CLASS_MEASUREMENT,
+        device_class=DEVICE_CLASS_TEMPERATURE,
+        value_fn=lambda x: x.device.outside_temperature,
+        enabled=lambda x: True,
+        entity_registry_enabled_default=False,
+    ),
+    MelcloudSensorEntityDescription(
+        key="tank_temperature",
+        name="Tank Temperature",
+        icon="mdi:thermometer",
+        native_unit_of_measurement=TEMP_CELSIUS,
+        state_class=STATE_CLASS_MEASUREMENT,
+        device_class=DEVICE_CLASS_TEMPERATURE,
+        value_fn=lambda x: x.device.tank_temperature,
+        enabled=lambda x: True,
+    ),
+)
+ATW_ZONE_SENSORS: tuple[MelcloudSensorEntityDescription, ...] = (
+    MelcloudSensorEntityDescription(
+        key="room_temperature",
+        name="Room Temperature",
+        icon="mdi:thermometer",
+        native_unit_of_measurement=TEMP_CELSIUS,
+        state_class=STATE_CLASS_MEASUREMENT,
+        device_class=DEVICE_CLASS_TEMPERATURE,
+        value_fn=lambda zone: zone.room_temperature,
+        enabled=lambda x: True,
+        entity_registry_enabled_default=False,
+    ),
+    MelcloudSensorEntityDescription(
+        key="flow_temperature",
+        name="Flow Temperature",
+        icon="mdi:thermometer",
+        native_unit_of_measurement=TEMP_CELSIUS,
+        state_class=STATE_CLASS_MEASUREMENT,
+        device_class=DEVICE_CLASS_TEMPERATURE,
+        value_fn=lambda zone: zone.flow_temperature,
+        enabled=lambda x: True,
+        entity_registry_enabled_default=False,
+    ),
+    MelcloudSensorEntityDescription(
+        key="return_temperature",
+        name="Flow Return Temperature",
+        icon="mdi:thermometer",
+        native_unit_of_measurement=TEMP_CELSIUS,
+        state_class=STATE_CLASS_MEASUREMENT,
+        device_class=DEVICE_CLASS_TEMPERATURE,
+        value_fn=lambda zone: zone.return_temperature,
+        enabled=lambda x: True,
+        entity_registry_enabled_default=False,
+    ),
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 
-@callback
-def setup_sensors(hass, entry, async_add_entities, type_binary, init_status=False):
-    """Set up MELCloud device sensors and bynary sensor based on config_entry."""
+async def async_setup_entry(hass, entry, async_add_entities):
+    """Set up MELCloud device sensors based on config_entry."""
     entry_config = hass.data[DOMAIN][entry.entry_id]
-    ata_sensors = ATA_BINARY_SENSORS if type_binary else ATA_SENSORS
-    atw_sensors = {} if type_binary else ATW_SENSORS
 
     mel_devices = entry_config.get(MEL_DEVICES)
     entities = []
     entities.extend(
         [
-            MelDeviceSensor(mel_device, measurement, definition, type_binary)
-            for measurement, definition in ata_sensors.items()
+            MelDeviceSensor(mel_device, description)
+            for description in ATA_SENSORS
             for mel_device in mel_devices[DEVICE_TYPE_ATA]
-            if definition[ATTR_ENABLED_FN](mel_device)
+            if description.enabled(mel_device)
         ]
         + [
-            MelDeviceSensor(mel_device, measurement, definition, type_binary)
-            for measurement, definition in atw_sensors.items()
+            MelDeviceSensor(mel_device, description)
+            for description in ATW_SENSORS
             for mel_device in mel_devices[DEVICE_TYPE_ATW]
-            if definition[ATTR_ENABLED_FN](mel_device)
+            if description.enabled(mel_device)
         ]
     )
     entities.extend(
         [
-            AtwZoneSensor(mel_device, zone, measurement, definition)
+            AtwZoneSensor(mel_device, zone, description)
             for mel_device in mel_devices[DEVICE_TYPE_ATW]
             for zone in mel_device.device.zones
-            for measurement, definition, in ATW_ZONE_SENSORS.items()
-            if definition[ATTR_ENABLED_FN](zone) and not type_binary
+            for description in ATW_ZONE_SENSORS
+            if description.enabled(zone)
         ]
     )
-    async_add_entities(entities, init_status)
+    async_add_entities(entities, False)
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    """Set up MELCloud device sensors based on config_entry."""
-    setup_sensors(hass, entry, async_add_entities, False)
-
-
-class MelDeviceSensor(Entity):
+class MelDeviceSensor(SensorEntity):
     """Representation of a Sensor."""
 
-    def __init__(self, device: MelCloudDevice, measurement, definition, is_binary):
+    entity_description: MelcloudSensorEntityDescription
+
+    def __init__(
+        self,
+        api: MelCloudDevice,
+        description: MelcloudSensorEntityDescription,
+    ) -> None:
         """Initialize the sensor."""
-        self._api = device
-        self._name_slug = device.name
-        self._measurement = measurement
-        self._def = definition
-        self._is_binary = is_binary
+        self._api = api
+        self.entity_description = description
+
+        self._attr_name = f"{api.name} {description.name}"
+        self._attr_unique_id = f"{api.device.serial}-{api.device.mac}-{description.key}"
 
     @property
-    def entity_registry_enabled_default(self) -> bool:
-        """Return if the entity should be enabled when first added to the entity registry."""
-        return self._def.get(ATTR_ENABLED_DEF, False)
-
-    @property
-    def unique_id(self):
-        """Return a unique ID."""
-        return f"{self._api.device.serial}-{self._api.device.mac}-{self._measurement}"
-
-    @property
-    def icon(self):
-        """Return the icon to use in the frontend, if any."""
-        return self._def[ATTR_ICON]
-
-    @property
-    def name(self):
-        """Return the name of the sensor."""
-        return f"{self._name_slug} {self._def[ATTR_MEASUREMENT_NAME]}"
-
-    @property
-    def is_on(self):
-        """Return the state of the binary sensor."""
-        if self._is_binary:
-            return self._def[ATTR_VALUE_FN](self._api)
-            
-        return False
-
-    @property
-    def state(self):
+    def native_value(self):
         """Return the state of the sensor."""
-        if self._is_binary:
-            return STATE_ON if self.is_on else STATE_OFF
-
-        return self._def[ATTR_VALUE_FN](self._api)
-
-    @property
-    def unit_of_measurement(self):
-        """Return the unit of measurement."""
-        return self._def[ATTR_UNIT]
-
-    @property
-    def device_class(self):
-        """Return device class."""
-        return self._def[ATTR_DEVICE_CLASS]
-
-    async def async_update(self):
-        """Retrieve latest state."""
-        await self._api.async_update()
+        return self.entity_description.value_fn(self._api)
 
     @property
     def device_info(self):
@@ -241,37 +199,32 @@ class MelDeviceSensor(Entity):
         return self._api.device_info
 
     @property
-    def state_attributes(self):
+    def extra_state_attributes(self):
         """Return the optional state attributes."""
-        data = {
-            ATTR_STATE_DEVICE_ID: self._api.device_id,
-            ATTR_STATE_DEVICE_SERIAL: self._api.device.serial,
-            ATTR_STATE_DEVICE_MAC: self._api.device.mac,
-            # data[ATTR_DEVICE_LAST_SEEN] = self._api.device.last_seen
-        }
+        return self._api.extra_attributes
 
-        unit_infos = self._api.device.units
-        if unit_infos is not None:
-            for i, u in enumerate(unit_infos):
-                if i < 2:
-                    data[ATTR_STATE_DEVICE_UNIT[i][ATTR_STATE_UMODEL]] = u[ATTR_STATE_UMODEL]
-                    data[ATTR_STATE_DEVICE_UNIT[i][ATTR_STATE_USERIAL]] = u[ATTR_STATE_USERIAL]
-
-        return data
+    async def async_update(self):
+        """Retrieve latest state."""
+        await self._api.async_update()
 
 
 class AtwZoneSensor(MelDeviceSensor):
     """Air-to-Air device sensor."""
 
     def __init__(
-        self, api: MelCloudDevice, zone: Zone, measurement, definition,
-    ):
+        self,
+        api: MelCloudDevice,
+        zone: Zone,
+        description: MelcloudSensorEntityDescription,
+    ) -> None:
         """Initialize the sensor."""
-        super().__init__(api, measurement, definition, False)
+        if zone.zone_index != 1:
+            description.key = f"{description.key}-zone-{zone.zone_index}"
+        super().__init__(api, description)
         self._zone = zone
-        self._name_slug = f"{api.name} {zone.name}"
+        self._attr_name = f"{api.name} {zone.name} {description.name}"
 
     @property
-    def state(self):
+    def native_value(self):
         """Return zone based state."""
-        return self._def[ATTR_VALUE_FN](self._zone)
+        return self.entity_description.value_fn(self._zone)
