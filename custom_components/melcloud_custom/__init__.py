@@ -11,10 +11,12 @@ from pymelcloud.client import BASE_URL
 import voluptuous as vol
 
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
-from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
+from homeassistant.const import ATTR_MODEL, CONF_USERNAME, CONF_PASSWORD
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.typing import HomeAssistantType
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import Throttle
 
 from .const import (
@@ -113,7 +115,7 @@ class MelCloudAuthentication:
         return self._contextkey
 
 
-async def async_setup(hass: HomeAssistantType, config: ConfigEntry):
+async def async_setup(hass: HomeAssistant, config: ConfigType):
     """Establish connection with MELCloud."""
     if DOMAIN not in config:
         return True
@@ -130,7 +132,7 @@ async def async_setup(hass: HomeAssistantType, config: ConfigEntry):
     return True
 
 
-async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Establish connection with MELCloud."""
     conf = entry.data
     username = conf[CONF_USERNAME]
@@ -165,12 +167,13 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
     return True
 
 
-async def async_unload_entry(hass, config_entry):
+async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(
         config_entry, PLATFORMS
     )
-    hass.data[DOMAIN].pop(config_entry.entry_id)
+    if unload_ok:
+        hass.data[DOMAIN].pop(config_entry.entry_id)
     if not hass.data[DOMAIN]:
         hass.data.pop(DOMAIN)
     return unload_ok
@@ -249,21 +252,21 @@ class MelCloudDevice:
         return device.get("HasWideVane", False)
 
     @property
-    def device_info(self):
+    def device_info(self) -> DeviceInfo:
         """Return a device description for device registry."""
-        _device_info = {
-            "identifiers": {(DOMAIN, f"{self.device.mac}-{self.device.serial}")},
-            "manufacturer": "Mitsubishi Electric",
-            "name": self.name,
-            "connections": {(CONNECTION_NETWORK_MAC, self.device.mac)},
-        }
+        _device_info = DeviceInfo(
+            identifiers={(DOMAIN, f"{self.device.mac}-{self.device.serial}")},
+            manufacturer="Mitsubishi Electric",
+            name=self.name,
+            connections={(CONNECTION_NETWORK_MAC, self.device.mac)},
+        )
         model = f"MELCloud IF (MAC: {self.device.mac})"
         unit_infos = self.device.units
         if unit_infos is not None:
             model = model + " - " + ", ".join(
                 [x["model"] for x in unit_infos if x["model"]]
             )
-        _device_info["model"] = model
+        _device_info[ATTR_MODEL] = model
         
         return _device_info
 
