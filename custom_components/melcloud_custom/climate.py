@@ -13,22 +13,12 @@ from pymelcloud.atw_device import (
 )
 from pymelcloud.device import PROPERTY_POWER
 
-from homeassistant.components.climate import ClimateEntity
-from homeassistant.components.climate.const import (
-    DEFAULT_MAX_TEMP,
-    DEFAULT_MIN_TEMP,
-    HVAC_MODE_AUTO,
-    HVAC_MODE_COOL,
-    HVAC_MODE_DRY,
-    HVAC_MODE_FAN_ONLY,
-    HVAC_MODE_HEAT,
-    HVAC_MODE_HEAT_COOL,
-    HVAC_MODE_OFF,
-    # SUPPORT_PRESET_MODE,
-    SUPPORT_FAN_MODE,
-    SUPPORT_SWING_MODE,
-    SUPPORT_TARGET_TEMPERATURE,
+from homeassistant.components.climate import (
+    ClimateEntity,
+    ClimateEntityFeature,
+    HVACMode,
 )
+from homeassistant.components.climate.const import DEFAULT_MAX_TEMP, DEFAULT_MIN_TEMP
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import TEMP_CELSIUS
 from homeassistant.helpers.typing import HomeAssistantType
@@ -50,11 +40,11 @@ _LOGGER = logging.getLogger(__name__)
 
 
 ATA_HVAC_MODE_LOOKUP = {
-    ata.OPERATION_MODE_HEAT: HVAC_MODE_HEAT,
-    ata.OPERATION_MODE_DRY: HVAC_MODE_DRY,
-    ata.OPERATION_MODE_COOL: HVAC_MODE_COOL,
-    ata.OPERATION_MODE_FAN_ONLY: HVAC_MODE_FAN_ONLY,
-    ata.OPERATION_MODE_HEAT_COOL: HVAC_MODE_HEAT_COOL,
+    ata.OPERATION_MODE_HEAT: HVACMode.HEAT,
+    ata.OPERATION_MODE_DRY: HVACMode.DRY,
+    ata.OPERATION_MODE_COOL: HVACMode.COOL,
+    ata.OPERATION_MODE_FAN_ONLY: HVACMode.FAN_ONLY,
+    ata.OPERATION_MODE_HEAT_COOL: HVACMode.HEAT_COOL,
 }
 ATA_HVAC_MODE_REVERSE_LOOKUP = {v: k for k, v in ATA_HVAC_MODE_LOOKUP.items()}
 
@@ -85,8 +75,8 @@ ATA_HVAC_HVANE_REVERSE_LOOKUP = {v: k for k, v in ATA_HVAC_HVANE_LOOKUP.items()}
 
 
 ATW_ZONE_HVAC_MODE_LOOKUP = {
-    atw.ZONE_OPERATION_MODE_HEAT: HVAC_MODE_HEAT,
-    atw.ZONE_OPERATION_MODE_COOL: HVAC_MODE_COOL,
+    atw.ZONE_OPERATION_MODE_HEAT: HVACMode.HEAT,
+    atw.ZONE_OPERATION_MODE_COOL: HVACMode.COOL,
 }
 ATW_ZONE_HVAC_MODE_REVERSE_LOOKUP = {v: k for k, v in ATW_ZONE_HVAC_MODE_LOOKUP.items()}
 
@@ -178,12 +168,12 @@ class AtaDeviceClimate(MelCloudClimate):
         """Return hvac operation ie. heat, cool mode."""
         op_mode = self._device.operation_mode
         if not self._device.power or op_mode is None:
-            return HVAC_MODE_OFF
-        return ATA_HVAC_MODE_LOOKUP.get(op_mode, HVAC_MODE_AUTO)
+            return HVACMode.OFF
+        return ATA_HVAC_MODE_LOOKUP.get(op_mode, HVACMode.AUTO)
 
     async def async_set_hvac_mode(self, hvac_mode: str) -> None:
         """Set new target hvac mode."""
-        if hvac_mode == HVAC_MODE_OFF:
+        if hvac_mode == HVACMode.OFF:
             await self._device.set({PROPERTY_POWER: False})
             return
 
@@ -192,14 +182,14 @@ class AtaDeviceClimate(MelCloudClimate):
             raise ValueError(f"Invalid hvac_mode [{hvac_mode}]")
 
         props = {ata.PROPERTY_OPERATION_MODE: operation_mode}
-        if self.hvac_mode == HVAC_MODE_OFF:
+        if self.hvac_mode == HVACMode.OFF:
             props[PROPERTY_POWER] = True
         await self._device.set(props)
 
     @property
     def hvac_modes(self) -> List[str]:
         """Return the list of available hvac operation modes."""
-        return [HVAC_MODE_OFF] + [
+        return [HVACMode.OFF] + [
             ATA_HVAC_MODE_LOOKUP.get(mode) for mode in self._device.operation_modes
         ]
 
@@ -299,9 +289,9 @@ class AtaDeviceClimate(MelCloudClimate):
     @property
     def supported_features(self) -> int:
         """Return the list of supported features."""
-        supp_feature = SUPPORT_FAN_MODE | SUPPORT_TARGET_TEMPERATURE
+        supp_feature = ClimateEntityFeature.FAN_MODE | ClimateEntityFeature.TARGET_TEMPERATURE
         if self._support_ver_swing or self._support_hor_swing:
-            supp_feature |= SUPPORT_SWING_MODE
+            supp_feature |= ClimateEntityFeature.SWING_MODE
 
         return supp_feature
 
@@ -329,7 +319,7 @@ class AtwDeviceZoneClimate(MelCloudClimate):
 
     _attr_max_temp = 30
     _attr_min_temp = 10
-    _attr_supported_features = SUPPORT_TARGET_TEMPERATURE
+    _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
 
     def __init__(self, device: MelCloudDevice, atw_device: AtwDevice, atw_zone: Zone):
         """Initialize the climate."""
@@ -354,12 +344,12 @@ class AtwDeviceZoneClimate(MelCloudClimate):
         """Return hvac operation ie. heat, cool mode."""
         mode = self._zone.operation_mode
         if not self._device.power or mode is None:
-            return HVAC_MODE_OFF
-        return ATW_ZONE_HVAC_MODE_LOOKUP.get(mode, HVAC_MODE_OFF)
+            return HVACMode.OFF
+        return ATW_ZONE_HVAC_MODE_LOOKUP.get(mode, HVACMode.OFF)
 
     async def async_set_hvac_mode(self, hvac_mode: str) -> None:
         """Set new target hvac mode."""
-        if hvac_mode == HVAC_MODE_OFF:
+        if hvac_mode == HVACMode.OFF:
             await self._device.set({"power": False})
             return
 
@@ -371,7 +361,7 @@ class AtwDeviceZoneClimate(MelCloudClimate):
             props = {PROPERTY_ZONE_1_OPERATION_MODE: operation_mode}
         else:
             props = {PROPERTY_ZONE_2_OPERATION_MODE: operation_mode}
-        if self.hvac_mode == HVAC_MODE_OFF:
+        if self.hvac_mode == HVACMode.OFF:
             props["power"] = True
         await self._device.set(props)
 

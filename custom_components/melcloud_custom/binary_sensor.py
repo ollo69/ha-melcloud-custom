@@ -8,7 +8,7 @@ from typing import Any, Callable
 from pymelcloud import DEVICE_TYPE_ATA
 
 from homeassistant.components.binary_sensor import (
-    DEVICE_CLASS_PROBLEM,
+    BinarySensorDeviceClass,
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
@@ -36,7 +36,7 @@ ATA_BINARY_SENSORS: tuple[MelcloudBinarySensorEntityDescription, ...] = (
     MelcloudBinarySensorEntityDescription(
         key="error_state",
         name="Error State",
-        device_class=DEVICE_CLASS_PROBLEM,
+        device_class=BinarySensorDeviceClass.PROBLEM,
         value_fn=lambda x: x.error_state,
         enabled=lambda x: True,
     ),

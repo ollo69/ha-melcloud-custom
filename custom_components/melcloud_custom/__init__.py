@@ -11,7 +11,7 @@ from pymelcloud.client import BASE_URL
 import voluptuous as vol
 
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
-from homeassistant.const import ATTR_MODEL, CONF_USERNAME, CONF_PASSWORD
+from homeassistant.const import ATTR_MODEL, CONF_USERNAME, CONF_PASSWORD, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
@@ -50,7 +50,7 @@ _LOGGER = logging.getLogger(__name__)
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=60)
 
-PLATFORMS = ["climate", "sensor", "binary_sensor"]
+PLATFORMS = [Platform.CLIMATE, Platform.SENSOR, Platform.BINARY_SENSOR]
 
 MELCLOUD_SCHEMA = vol.Schema({
     vol.Required(CONF_USERNAME): str,
@@ -65,7 +65,7 @@ CONFIG_SCHEMA = vol.Schema(
     extra=vol.ALLOW_EXTRA,
 )
 
-#BASE_URL = "https://app.melcloud.com/Mitsubishi.Wifi.Client"
+# BASE_URL = "https://app.melcloud.com/Mitsubishi.Wifi.Client"
 
 
 class MelCloudAuthentication:
