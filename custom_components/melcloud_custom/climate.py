@@ -39,17 +39,19 @@ SCAN_INTERVAL = timedelta(seconds=60)
 _LOGGER = logging.getLogger(__name__)
 
 
-ATA_HVAC_MODE_LOOKUP = {
+ATA_HVAC_MODE_LOOKUP: dict[str, HVACMode] = {
     ata.OPERATION_MODE_HEAT: HVACMode.HEAT,
     ata.OPERATION_MODE_DRY: HVACMode.DRY,
     ata.OPERATION_MODE_COOL: HVACMode.COOL,
     ata.OPERATION_MODE_FAN_ONLY: HVACMode.FAN_ONLY,
     ata.OPERATION_MODE_HEAT_COOL: HVACMode.HEAT_COOL,
 }
-ATA_HVAC_MODE_REVERSE_LOOKUP = {v: k for k, v in ATA_HVAC_MODE_LOOKUP.items()}
+ATA_HVAC_MODE_REVERSE_LOOKUP: dict[HVACMode, str] = {
+    v: k for k, v in ATA_HVAC_MODE_LOOKUP.items()
+}
 
 
-ATA_HVAC_VVANE_LOOKUP = {
+ATA_HVAC_VVANE_LOOKUP: dict[str, str] = {
     ata.V_VANE_POSITION_AUTO: VertSwingModes.Auto,
     ata.V_VANE_POSITION_1: VertSwingModes.Top,
     ata.V_VANE_POSITION_2: VertSwingModes.MiddleTop,
@@ -58,10 +60,12 @@ ATA_HVAC_VVANE_LOOKUP = {
     ata.V_VANE_POSITION_5: VertSwingModes.Bottom,
     ata.V_VANE_POSITION_SWING: VertSwingModes.Swing,
 }
-ATA_HVAC_VVANE_REVERSE_LOOKUP = {v: k for k, v in ATA_HVAC_VVANE_LOOKUP.items()}
+ATA_HVAC_VVANE_REVERSE_LOOKUP: dict[str, str] = {
+    v: k for k, v in ATA_HVAC_VVANE_LOOKUP.items()
+}
 
 
-ATA_HVAC_HVANE_LOOKUP = {
+ATA_HVAC_HVANE_LOOKUP: dict[str, str] = {
     ata.H_VANE_POSITION_AUTO: HorSwingModes.Auto,
     ata.H_VANE_POSITION_1: HorSwingModes.Left,
     ata.H_VANE_POSITION_2: HorSwingModes.MiddleLeft,
@@ -71,14 +75,18 @@ ATA_HVAC_HVANE_LOOKUP = {
     ata.H_VANE_POSITION_SPLIT: HorSwingModes.Split,
     ata.H_VANE_POSITION_SWING: HorSwingModes.Swing,
 }
-ATA_HVAC_HVANE_REVERSE_LOOKUP = {v: k for k, v in ATA_HVAC_HVANE_LOOKUP.items()}
+ATA_HVAC_HVANE_REVERSE_LOOKUP: dict[str, str] = {
+    v: k for k, v in ATA_HVAC_HVANE_LOOKUP.items()
+}
 
 
-ATW_ZONE_HVAC_MODE_LOOKUP = {
+ATW_ZONE_HVAC_MODE_LOOKUP: dict[str, HVACMode] = {
     atw.ZONE_OPERATION_MODE_HEAT: HVACMode.HEAT,
     atw.ZONE_OPERATION_MODE_COOL: HVACMode.COOL,
 }
-ATW_ZONE_HVAC_MODE_REVERSE_LOOKUP = {v: k for k, v in ATW_ZONE_HVAC_MODE_LOOKUP.items()}
+ATW_ZONE_HVAC_MODE_REVERSE_LOOKUP: dict[HVACMode, str] = {
+    v: k for k, v in ATW_ZONE_HVAC_MODE_LOOKUP.items()
+}
 
 
 async def async_setup_entry(
@@ -164,14 +172,14 @@ class AtaDeviceClimate(MelCloudClimate):
         return attr
 
     @property
-    def hvac_mode(self) -> str:
+    def hvac_mode(self) -> HVACMode:
         """Return hvac operation ie. heat, cool mode."""
         op_mode = self._device.operation_mode
         if not self._device.power or op_mode is None:
             return HVACMode.OFF
         return ATA_HVAC_MODE_LOOKUP.get(op_mode, HVACMode.AUTO)
 
-    async def async_set_hvac_mode(self, hvac_mode: str) -> None:
+    async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set new target hvac mode."""
         if hvac_mode == HVACMode.OFF:
             await self._device.set({PROPERTY_POWER: False})
@@ -187,7 +195,7 @@ class AtaDeviceClimate(MelCloudClimate):
         await self._device.set(props)
 
     @property
-    def hvac_modes(self) -> List[str]:
+    def hvac_modes(self) -> List[HVACMode]:
         """Return the list of available hvac operation modes."""
         return [HVACMode.OFF] + [
             ATA_HVAC_MODE_LOOKUP.get(mode) for mode in self._device.operation_modes
@@ -340,14 +348,14 @@ class AtwDeviceZoneClimate(MelCloudClimate):
         return data
 
     @property
-    def hvac_mode(self) -> str:
+    def hvac_mode(self) -> HVACMode:
         """Return hvac operation ie. heat, cool mode."""
         mode = self._zone.operation_mode
         if not self._device.power or mode is None:
             return HVACMode.OFF
         return ATW_ZONE_HVAC_MODE_LOOKUP.get(mode, HVACMode.OFF)
 
-    async def async_set_hvac_mode(self, hvac_mode: str) -> None:
+    async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set new target hvac mode."""
         if hvac_mode == HVACMode.OFF:
             await self._device.set({"power": False})
@@ -366,7 +374,7 @@ class AtwDeviceZoneClimate(MelCloudClimate):
         await self._device.set(props)
 
     @property
-    def hvac_modes(self) -> List[str]:
+    def hvac_modes(self) -> List[HVACMode]:
         """Return the list of available hvac operation modes."""
         return [self.hvac_mode]
 

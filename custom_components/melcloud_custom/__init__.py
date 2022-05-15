@@ -185,7 +185,7 @@ class MelCloudDevice:
     def __init__(self, device: Device):
         """Construct a device wrapper."""
         self.device = device
-        self.name = device.name
+        self.name: Optional[str] = device.name
         self._available = True
         self._extra_attributes = None
 
