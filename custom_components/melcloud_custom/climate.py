@@ -221,13 +221,11 @@ class AtaDeviceClimate(MelCloudClimate):
     async def async_set_temperature(self, **kwargs) -> None:
         """Set new target temperature."""
         set_dict = {}
-        if ATTR_HVAC_MODE in kwargs:
-            self._apply_set_hvac_mode(
-                kwargs.get(ATTR_HVAC_MODE, self.hvac_mode), set_dict
-            )
+        if hvac_mode := kwargs.get(ATTR_HVAC_MODE):
+            self._apply_set_hvac_mode(HVACMode(hvac_mode), set_dict)
 
-        if ATTR_TEMPERATURE in kwargs:
-            set_dict[ata.PROPERTY_TARGET_TEMPERATURE] = kwargs.get(ATTR_TEMPERATURE)
+        if new_temp := kwargs.get(ATTR_TEMPERATURE):
+            set_dict[ata.PROPERTY_TARGET_TEMPERATURE] = new_temp
 
         if set_dict:
             await self._device.set(set_dict)
