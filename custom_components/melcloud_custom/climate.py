@@ -13,14 +13,16 @@ from pymelcloud.atw_device import (
 )
 from pymelcloud.device import PROPERTY_POWER
 
-from homeassistant.components.climate import (
-    ClimateEntity,
+from homeassistant.components.climate import ClimateEntity
+from homeassistant.components.climate.const import (
+    ATTR_HVAC_MODE,
+    DEFAULT_MAX_TEMP,
+    DEFAULT_MIN_TEMP,
     ClimateEntityFeature,
     HVACMode,
 )
-from homeassistant.components.climate.const import DEFAULT_MAX_TEMP, DEFAULT_MIN_TEMP
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import TEMP_CELSIUS
+from homeassistant.const import ATTR_TEMPERATURE, TEMP_CELSIUS
 from homeassistant.helpers.typing import HomeAssistantType
 
 from . import MelCloudDevice
@@ -179,20 +181,25 @@ class AtaDeviceClimate(MelCloudClimate):
             return HVACMode.OFF
         return ATA_HVAC_MODE_LOOKUP.get(op_mode, HVACMode.AUTO)
 
-    async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
-        """Set new target hvac mode."""
+    def _apply_set_hvac_mode(self, hvac_mode: HVACMode, set_dict: dict[str, Any]) -> None:
+        """Apply hvac mode changes to a dict used to call _device.set."""
         if hvac_mode == HVACMode.OFF:
-            await self._device.set({PROPERTY_POWER: False})
+            set_dict[PROPERTY_POWER] = False
             return
 
         operation_mode = ATA_HVAC_MODE_REVERSE_LOOKUP.get(hvac_mode)
         if operation_mode is None:
             raise ValueError(f"Invalid hvac_mode [{hvac_mode}]")
 
-        props = {ata.PROPERTY_OPERATION_MODE: operation_mode}
+        set_dict[ata.PROPERTY_OPERATION_MODE] = operation_mode
         if self.hvac_mode == HVACMode.OFF:
-            props[PROPERTY_POWER] = True
-        await self._device.set(props)
+            set_dict[PROPERTY_POWER] = True
+
+    async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
+        """Set new target hvac mode."""
+        set_dict = {}
+        self._apply_set_hvac_mode(hvac_mode, set_dict)
+        await self._device.set(set_dict)
 
     @property
     def hvac_modes(self) -> List[HVACMode]:
@@ -213,9 +220,17 @@ class AtaDeviceClimate(MelCloudClimate):
 
     async def async_set_temperature(self, **kwargs) -> None:
         """Set new target temperature."""
-        await self._device.set(
-            {ata.PROPERTY_TARGET_TEMPERATURE: kwargs.get("temperature", self.target_temperature)}
-        )
+        set_dict = {}
+        if ATTR_HVAC_MODE in kwargs:
+            self._apply_set_hvac_mode(
+                kwargs.get(ATTR_HVAC_MODE, self.hvac_mode), set_dict
+            )
+
+        if ATTR_TEMPERATURE in kwargs:
+            set_dict[ata.PROPERTY_TARGET_TEMPERATURE] = kwargs.get(ATTR_TEMPERATURE)
+
+        if set_dict:
+            await self._device.set(set_dict)
 
     @property
     def fan_mode(self) -> Optional[str]:
