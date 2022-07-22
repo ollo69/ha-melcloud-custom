@@ -1,7 +1,8 @@
 {
     "config": {
         "abort": {
-            "already_configured": "Integrazione MELCloud gi\u00e0 configurata per questa e-mail. La password di accesso \u00e8 stata aggiornata."
+            "already_configured": "Integrazione MELCloud gi\u00e0 configurata per questa e-mail. La password di accesso \u00e8 stata aggiornata.",
+            "already_imported": "Integrazione MELCloud gi\u00e0 configurata per questa e-mail. Configurazione abortita."
         },
         "error": {
             "cannot_connect": "Impossibile connettersi, si prega di riprovare",
