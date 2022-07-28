@@ -19,6 +19,7 @@ from homeassistant.const import (
     TEMP_CELSIUS,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
 )
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import MelCloudDevice
 from .const import DOMAIN, MEL_DEVICES
@@ -168,7 +169,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities(entities, False)
 
 
-class MelDeviceSensor(SensorEntity):
+class MelDeviceSensor(CoordinatorEntity, SensorEntity):
     """Representation of a Sensor."""
 
     entity_description: MelcloudSensorEntityDescription
@@ -179,6 +180,7 @@ class MelDeviceSensor(SensorEntity):
         description: MelcloudSensorEntityDescription,
     ) -> None:
         """Initialize the sensor."""
+        super().__init__(api.coordinator)
         self._api = api
         self.entity_description = description
 
@@ -199,10 +201,6 @@ class MelDeviceSensor(SensorEntity):
     def extra_state_attributes(self):
         """Return the optional state attributes."""
         return self._api.extra_attributes
-
-    async def async_update(self):
-        """Retrieve latest state."""
-        await self._api.async_update()
 
 
 class AtwZoneSensor(MelDeviceSensor):

@@ -12,6 +12,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import MelCloudDevice
 from .const import DOMAIN, MEL_DEVICES
@@ -62,7 +63,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities(entities, False)
 
 
-class MelDeviceBinarySensor(BinarySensorEntity):
+class MelDeviceBinarySensor(CoordinatorEntity, BinarySensorEntity):
     """Representation of a Binary Sensor."""
 
     entity_description: MelcloudBinarySensorEntityDescription
@@ -73,6 +74,7 @@ class MelDeviceBinarySensor(BinarySensorEntity):
         description: MelcloudBinarySensorEntityDescription,
     ) -> None:
         """Initialize the sensor."""
+        super().__init__(api.coordinator)
         self._api = api
         self.entity_description = description
 
@@ -93,7 +95,3 @@ class MelDeviceBinarySensor(BinarySensorEntity):
     def extra_state_attributes(self):
         """Return the optional state attributes."""
         return self._api.extra_attributes
-
-    async def async_update(self):
-        """Retrieve latest state."""
-        await self._api.async_update()

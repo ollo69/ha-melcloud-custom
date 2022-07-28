@@ -1,7 +1,7 @@
 """The MELCloud Climate integration."""
 from __future__ import annotations
 
-from aiohttp import ClientConnectionError
+from aiohttp import ClientConnectionError, ClientResponseError
 import asyncio
 from async_timeout import timeout
 from collections.abc import Iterable
@@ -29,7 +29,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.typing import ConfigType
-from homeassistant.util import Throttle
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
     CONF_LANGUAGE,
@@ -60,7 +60,7 @@ ATTR_STATE_DEVICE_UNIT = [
 
 _LOGGER = logging.getLogger(__name__)
 
-MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=60)
+SCAN_INTERVAL = timedelta(seconds=60)
 
 PLATFORMS = [Platform.CLIMATE, Platform.SENSOR, Platform.BINARY_SENSOR]
 
@@ -232,38 +232,49 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry):
 class MelCloudDevice:
     """MELCloud Device instance."""
 
-    def __init__(self, device: Device):
+    def __init__(self, device: Device) -> None:
         """Construct a device wrapper."""
         self.device = device
-        self.name: Optional[str] = device.name
-        self._available = True
+        self.name: str | None = device.name
         self._extra_attributes = None
         self._dev_conf = None
+        self._coordinator: DataUpdateCoordinator | None = None
 
-    @Throttle(MIN_TIME_BETWEEN_UPDATES)
-    async def async_update(self, **kwargs):
+    async def _async_update(self):
         """Pull the latest data from MELCloud."""
         self._dev_conf = None
-        try:
-            await self.device.update()
-            self._available = True
-        except ClientConnectionError:
-            _LOGGER.warning("Connection failed for %s", self.name)
-            self._available = False
+        await self.device.update()
+
+    async def async_create_coordinator(self, hass: HomeAssistant) -> None:
+        """Get the coordinator for a specific device."""
+        if self._coordinator:
+            return
+
+        coordinator = DataUpdateCoordinator(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN}-{self.name or self.device_id}",
+            update_method=self._async_update,
+            # Polling interval. Will only be polled if there are subscribers.
+            update_interval=SCAN_INTERVAL,
+        )
+        await coordinator.async_refresh()
+        self._coordinator = coordinator
 
     async def async_set(self, properties: Dict[str, Any]):
         """Write state changes to the MELCloud API."""
         try:
             await self.device.set(properties)
-            self._available = True
-        except ClientConnectionError:
-            _LOGGER.warning("Connection failed for %s", self.name)
-            self._available = False
+        except (ClientConnectionError, ClientResponseError):
+            _LOGGER.warning("Set status failed for %s", self.name)
+            return
+        if self._coordinator:
+            self._coordinator.async_set_updated_data(None)
 
     @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return self._available
+    def coordinator(self) -> DataUpdateCoordinator | None:
+        """Return coordinator associated."""
+        return self._coordinator
 
     @property
     def device_id(self):
@@ -357,10 +368,15 @@ async def mel_devices_setup(hass: HomeAssistant, token: str) -> dict[str, list[M
                 conf_update_interval=timedelta(minutes=5),
                 device_set_debounce=timedelta(seconds=1),
             )
-    except (asyncio.TimeoutError, ClientConnectionError) as ex:
+    except (asyncio.TimeoutError, ClientConnectionError, ClientResponseError) as ex:
         raise ConfigEntryNotReady() from ex
 
     wrapped_devices: dict[str, list[MelCloudDevice]] = {}
     for device_type, devices in all_devices.items():
-        wrapped_devices[device_type] = [MelCloudDevice(device) for device in devices]
+        wrapped_types = []
+        for device in devices:
+            mel_device = MelCloudDevice(device)
+            await mel_device.async_create_coordinator(hass)
+            wrapped_types.append(mel_device)
+        wrapped_devices[device_type] = wrapped_types
     return wrapped_devices
