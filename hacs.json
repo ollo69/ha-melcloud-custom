@@ -1,10 +1,5 @@
 {
   "name": "MELCloud Custom",
-  "domains": [
-	"sensor",
-	"binary_sensor",
-	"climate"
-  ],
-  "iot_class": "cloud_poll",
+  "content_in_root": false,
   "homeassistant": "2022.5.0"
 }
