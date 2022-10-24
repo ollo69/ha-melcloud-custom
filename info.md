@@ -79,6 +79,6 @@ Edit it by adding the following lines:
 **Note!** In this case you do not need to replace "!secret melcloud_username" and "!secret melcloud_password". 
 Those are place holders that homeassistant automatically replaces by looking at the secrets.yaml file. 
 
-1. Reboot hpme assistant
+1. Reboot home assistant
 1. Congrats! You're all set!
 
