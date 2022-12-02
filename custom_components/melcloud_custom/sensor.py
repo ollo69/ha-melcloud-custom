@@ -16,8 +16,8 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import (
     ENERGY_KILO_WATT_HOUR,
-    TEMP_CELSIUS,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+    TEMP_CELSIUS,
 )
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -74,6 +74,16 @@ ATA_SENSORS: tuple[MelcloudSensorEntityDescription, ...] = (
         enabled=lambda x: x.device.has_energy_consumed_meter,
         entity_registry_enabled_default=False,
     ),
+    MelcloudSensorEntityDescription(
+        key="daily_energy",
+        name="Daily Energy Consumed",
+        icon="mdi:factory",
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        value_fn=lambda x: x.device.daily_energy_consumed,
+        enabled=lambda x: True,
+        entity_registry_enabled_default=False,
+    ),
 )
 ATW_SENSORS: tuple[MelcloudSensorEntityDescription, ...] = (
     MelcloudSensorEntityDescription(
@@ -96,6 +106,16 @@ ATW_SENSORS: tuple[MelcloudSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         value_fn=lambda x: x.device.tank_temperature,
         enabled=lambda x: True,
+    ),
+    MelcloudSensorEntityDescription(
+        key="daily_energy",
+        name="Daily Energy Consumed",
+        icon="mdi:factory",
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        value_fn=lambda x: x.device.daily_energy_consumed,
+        enabled=lambda x: True,
+        entity_registry_enabled_default=False,
     ),
 )
 ATW_ZONE_SENSORS: tuple[MelcloudSensorEntityDescription, ...] = (

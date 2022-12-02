@@ -28,10 +28,10 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import MelCloudDevice
 from .const import (
     ATTR_STATUS,
-    ATTR_VANE_VERTICAL,
     ATTR_VANE_HORIZONTAL,
-    DOMAIN, 
-    MEL_DEVICES, 
+    ATTR_VANE_VERTICAL,
+    DOMAIN,
+    MEL_DEVICES,
     HorSwingModes,
     VertSwingModes,
 )
@@ -176,7 +176,9 @@ class AtaDeviceClimate(MelCloudClimate):
             return HVACMode.OFF
         return ATA_HVAC_MODE_LOOKUP.get(op_mode, HVACMode.AUTO)
 
-    def _apply_set_hvac_mode(self, hvac_mode: HVACMode, set_dict: dict[str, Any]) -> None:
+    def _apply_set_hvac_mode(
+        self, hvac_mode: HVACMode, set_dict: dict[str, Any]
+    ) -> None:
         """Apply hvac mode changes to a dict used to call _device.set."""
         if hvac_mode == HVACMode.OFF:
             set_dict[PROPERTY_POWER] = False
@@ -251,7 +253,7 @@ class AtaDeviceClimate(MelCloudClimate):
             mode = self._device.vane_vertical
             if mode is not None:
                 swing = ATA_HVAC_VVANE_LOOKUP.get(mode)
-            
+
         if swing is None:
             return "Auto"
 
@@ -305,7 +307,9 @@ class AtaDeviceClimate(MelCloudClimate):
     @property
     def supported_features(self) -> int:
         """Return the list of supported features."""
-        supp_feature = ClimateEntityFeature.FAN_MODE | ClimateEntityFeature.TARGET_TEMPERATURE
+        supp_feature = (
+            ClimateEntityFeature.FAN_MODE | ClimateEntityFeature.TARGET_TEMPERATURE
+        )
         if self._support_ver_swing or self._support_hor_swing:
             supp_feature |= ClimateEntityFeature.SWING_MODE
 
