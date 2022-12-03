@@ -141,9 +141,9 @@ async def _async_migrate_config(
 
     mcauth = MelCloudAuthentication(username, conf[CONF_PASSWORD], mc_language)
     try:
-        result = await mcauth.login(hass)
-        if not result:
-            raise ConfigEntryNotReady()
+        async with timeout(10):
+            if not await mcauth.login(hass):
+                raise ConfigEntryNotReady()
     except Exception as ex:
         raise ConfigEntryNotReady() from ex
 
@@ -340,7 +340,7 @@ async def mel_devices_setup(
     """Query connected devices from MELCloud."""
     session = async_get_clientsession(hass)
     try:
-        with timeout(10):
+        async with timeout(10):
             all_devices = await get_devices(
                 token,
                 session,
