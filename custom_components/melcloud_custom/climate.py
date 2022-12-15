@@ -37,7 +37,6 @@ from .const import (
     VertSwingModes,
 )
 
-
 ATA_HVAC_MODE_LOOKUP: dict[str, HVACMode] = {
     ata.OPERATION_MODE_HEAT: HVACMode.HEAT,
     ata.OPERATION_MODE_DRY: HVACMode.DRY,
