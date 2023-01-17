@@ -1,22 +1,26 @@
 """Config flow for the MELCloud platform."""
 import asyncio
+from http import HTTPStatus
 import logging
 
 from aiohttp import ClientError, ClientResponseError
 from async_timeout import timeout
+import pymelcloud
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_TOKEN, CONF_USERNAME
 from homeassistant.core import callback
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import DOMAIN, CONF_LANGUAGE, LANGUAGES  # pylint: disable=unused-import
 from . import MELCLOUD_SCHEMA, MelCloudAuthentication
+from .const import CONF_LANGUAGE, DOMAIN, LANGUAGES  # pylint: disable=unused-import
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow."""
+
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
 
@@ -25,13 +29,11 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(username)
         self._abort_if_unique_id_configured({CONF_TOKEN: token})
         return self.async_create_entry(
-            title=username, data={CONF_TOKEN: token},
+            title=username,
+            data={CONF_TOKEN: token},
         )
 
-    async def _create_client(
-        self,
-        user_input
-    ):
+    async def _create_client(self, user_input):
         """Create client."""
         username = user_input[CONF_USERNAME]
         password = user_input[CONF_PASSWORD]
@@ -43,13 +45,17 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         try:
-            with timeout(10):
+            async with timeout(10):
                 token = await self._test_authorization(username, password, language)
                 if not token:
                     return self._show_form({"base": "invalid_auth"})
+                await pymelcloud.get_devices(
+                    token,
+                    async_get_clientsession(self.hass),
+                )
 
         except ClientResponseError as err:
-            if err.status == 401 or err.status == 403:
+            if err.status in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN):
                 return self._show_form({"base": "invalid_auth"})
             return self._show_form({"base": "cannot_connect"})
         except (asyncio.TimeoutError, ClientError):

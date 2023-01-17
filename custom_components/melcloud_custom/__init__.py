@@ -1,14 +1,13 @@
 """The MELCloud Climate integration."""
 from __future__ import annotations
 
-from aiohttp import ClientConnectionError, ClientResponseError
 import asyncio
-from async_timeout import timeout
-from collections.abc import Iterable
 from datetime import timedelta
 import logging
 from typing import Any, Dict, Optional
 
+from aiohttp import ClientConnectionError, ClientResponseError
+from async_timeout import timeout
 from pymelcloud import Device, get_devices
 from pymelcloud.client import BASE_URL
 import voluptuous as vol
@@ -16,11 +15,9 @@ import voluptuous as vol
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.const import (
     ATTR_MODEL,
-    CONF_USERNAME,
     CONF_PASSWORD,
     CONF_TOKEN,
-    MAJOR_VERSION,
-    MINOR_VERSION,
+    CONF_USERNAME,
     Platform,
 )
 from homeassistant.core import HomeAssistant
@@ -31,13 +28,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import (
-    CONF_LANGUAGE,
-    DOMAIN,
-    LANGUAGES,
-    MEL_DEVICES,
-    Language,
-)
+from .const import CONF_LANGUAGE, DOMAIN, LANGUAGES, MEL_DEVICES, Language
 
 ATTR_STATE_DEVICE_ID = "device_id"
 ATTR_STATE_DEVICE_SERIAL = "device_serial"
@@ -49,12 +40,12 @@ ATTR_STATE_USERIAL = "serial_number"
 
 ATTR_STATE_DEVICE_UNIT = [
     {
-      ATTR_STATE_UMODEL: "unit",
-      ATTR_STATE_USERIAL: "unit_serial",
+        ATTR_STATE_UMODEL: "unit",
+        ATTR_STATE_USERIAL: "unit_serial",
     },
     {
-      ATTR_STATE_UMODEL: "ext_unit",
-      ATTR_STATE_USERIAL: "ext_unit_serial",
+        ATTR_STATE_UMODEL: "ext_unit",
+        ATTR_STATE_USERIAL: "ext_unit_serial",
     },
 ]
 
@@ -62,18 +53,23 @@ _LOGGER = logging.getLogger(__name__)
 
 SCAN_INTERVAL = timedelta(seconds=60)
 
-PLATFORMS = [Platform.CLIMATE, Platform.SENSOR, Platform.BINARY_SENSOR]
+PLATFORMS = [
+    Platform.BINARY_SENSOR,
+    Platform.CLIMATE,
+    Platform.SENSOR,
+    Platform.WATER_HEATER,
+]
 
-MELCLOUD_SCHEMA = vol.Schema({
-    vol.Required(CONF_USERNAME): str,
-    vol.Required(CONF_PASSWORD): str,
-    vol.Required(CONF_LANGUAGE): vol.In(LANGUAGES.keys()),
-})
+MELCLOUD_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_USERNAME): str,
+        vol.Required(CONF_PASSWORD): str,
+        vol.Required(CONF_LANGUAGE): vol.In(LANGUAGES.keys()),
+    }
+)
 
 CONFIG_SCHEMA = vol.Schema(
-    {
-        DOMAIN: MELCLOUD_SCHEMA
-    },
+    {DOMAIN: MELCLOUD_SCHEMA},
     extra=vol.ALLOW_EXTRA,
 )
 
@@ -110,7 +106,7 @@ class MelCloudAuthentication:
             f"{BASE_URL}/Login/ClientLogin", json=body, raise_for_status=True
         ) as resp:
             req = await resp.json()
-    
+
         if req is not None:
             if "ErrorId" in req:
                 if req["ErrorId"] is not None:
@@ -130,26 +126,6 @@ class MelCloudAuthentication:
         return self._context_key
 
 
-def is_min_ha_version(min_ha_major_ver: int, min_ha_minor_ver: int) -> bool:
-    """Check if HA version at least a specific version."""
-    return (
-        MAJOR_VERSION > min_ha_major_ver or
-        (MAJOR_VERSION == min_ha_major_ver and MINOR_VERSION >= min_ha_minor_ver)
-    )
-
-
-async def async_setup_entity_platforms(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    platforms: Iterable[Platform | str],
-) -> None:
-    """Set up entity platforms using new method from HA version 2022.8."""
-    if is_min_ha_version(2022, 8):
-        await hass.config_entries.async_forward_entry_setups(config_entry, platforms)
-    else:
-        hass.config_entries.async_setup_platforms(config_entry, platforms)
-
-
 async def _async_migrate_config(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -165,14 +141,14 @@ async def _async_migrate_config(
         DOMAIN,
         username,
         language,
-        str(mc_language)
+        str(mc_language),
     )
 
     mcauth = MelCloudAuthentication(username, conf[CONF_PASSWORD], mc_language)
     try:
-        result = await mcauth.login(hass)
-        if not result:
-            raise ConfigEntryNotReady()
+        async with timeout(10):
+            if not await mcauth.login(hass):
+                raise ConfigEntryNotReady()
     except Exception as ex:
         raise ConfigEntryNotReady() from ex
 
@@ -187,7 +163,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType):
         return True
 
     conf = config.get(DOMAIN)
-    
+
     hass.async_create_task(
         hass.config_entries.flow.async_init(
             DOMAIN,
@@ -212,7 +188,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             MEL_DEVICES: mel_devices,
         }
     )
-    await async_setup_entity_platforms(hass, entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 
@@ -326,11 +302,13 @@ class MelCloudDevice:
         model = f"MELCloud IF (MAC: {self.device.mac})"
         unit_infos = self.device.units
         if unit_infos is not None:
-            model = model + " - " + ", ".join(
-                [x["model"] for x in unit_infos if x["model"]]
+            model = (
+                model
+                + " - "
+                + ", ".join([x["model"] for x in unit_infos if x["model"]])
             )
         _device_info[ATTR_MODEL] = model
-        
+
         return _device_info
 
     @property
@@ -350,18 +328,24 @@ class MelCloudDevice:
         if unit_infos is not None:
             for i, u in enumerate(unit_infos):
                 if i < 2:
-                    data[ATTR_STATE_DEVICE_UNIT[i][ATTR_STATE_UMODEL]] = u[ATTR_STATE_UMODEL]
-                    data[ATTR_STATE_DEVICE_UNIT[i][ATTR_STATE_USERIAL]] = u[ATTR_STATE_USERIAL]
+                    data[ATTR_STATE_DEVICE_UNIT[i][ATTR_STATE_UMODEL]] = u[
+                        ATTR_STATE_UMODEL
+                    ]
+                    data[ATTR_STATE_DEVICE_UNIT[i][ATTR_STATE_USERIAL]] = u[
+                        ATTR_STATE_USERIAL
+                    ]
             self._extra_attributes = data
 
         return data
 
 
-async def mel_devices_setup(hass: HomeAssistant, token: str) -> dict[str, list[MelCloudDevice]]:
+async def mel_devices_setup(
+    hass: HomeAssistant, token: str
+) -> dict[str, list[MelCloudDevice]]:
     """Query connected devices from MELCloud."""
     session = async_get_clientsession(hass)
     try:
-        with timeout(10):
+        async with timeout(10):
             all_devices = await get_devices(
                 token,
                 session,
