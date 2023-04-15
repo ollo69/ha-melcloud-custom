@@ -20,6 +20,7 @@ from homeassistant.components.climate.const import (
     DEFAULT_MIN_TEMP,
     ClimateEntityFeature,
     HVACMode,
+    HVACAction,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
@@ -77,6 +78,11 @@ ATA_HVAC_HVANE_REVERSE_LOOKUP: dict[str, str] = {
     v: k for k, v in ATA_HVAC_HVANE_LOOKUP.items()
 }
 
+ATW_ZONE_HVAC_STATE_LOOKUP: dict[str, HVACMode] = {
+    atw.ZONE_STATUS_HEAT: HVACAction.HEATING,
+    atw.ZONE_STATUS_COOL: HVACAction.COOLING,
+    atw.ZONE_STATUS_IDLE: HVACAction.IDLE,
+}
 
 ATW_ZONE_HVAC_MODE_LOOKUP: dict[str, HVACMode] = {
     atw.ZONE_OPERATION_MODE_HEAT: HVACMode.HEAT,
@@ -379,6 +385,17 @@ class AtwDeviceZoneClimate(MelCloudClimate):
         if self.hvac_mode == HVACMode.OFF:
             props["power"] = True
         await self.api.async_set(props)
+
+    @property
+    def hvac_action(self) -> HVACAction:
+        """Return the current running hvac operation if supported.
+        Need to be one of CURRENT_HVAC_*.
+        """
+        state = self._zone.status
+        mode = self._zone.operation_mode
+        if not self._device.power or mode is None:
+            return HVACAction.OFF
+        return ATW_ZONE_HVAC_STATE_LOOKUP.get(state, HVACAction.OFF)
 
     @property
     def hvac_modes(self) -> list[HVACMode]:
