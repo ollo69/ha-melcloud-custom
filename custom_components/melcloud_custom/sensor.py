@@ -156,7 +156,7 @@ ATW_SENSORS: tuple[MelcloudSensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.TEMPERATURE,
         value_fn=lambda x: x.device.tank_temperature,
-        enabled=lambda x: True,
+        enabled=lambda x: x.device_info.get("HasHotWaterTank", False),
     ),
 )
 ATW_ZONE_SENSORS: tuple[MelcloudSensorEntityDescription, ...] = (
