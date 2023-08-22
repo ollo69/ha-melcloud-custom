@@ -193,6 +193,7 @@ class MelDeviceSensor(CoordinatorEntity, SensorEntity):
     """Representation of a Sensor."""
 
     entity_description: MelcloudSensorEntityDescription
+    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -204,23 +205,14 @@ class MelDeviceSensor(CoordinatorEntity, SensorEntity):
         self._api = api
         self.entity_description = description
 
-        self._attr_name = f"{api.name} {description.name}"
         self._attr_unique_id = f"{api.device.serial}-{api.device.mac}-{description.key}"
+        self._attr_device_info = api.device_info
+        self._attr_extra_state_attributes = api.extra_attributes
 
     @property
     def native_value(self):
         """Return the state of the sensor."""
         return self.entity_description.value_fn(self._api)
-
-    @property
-    def device_info(self):
-        """Return a device description for device registry."""
-        return self._api.device_info
-
-    @property
-    def extra_state_attributes(self):
-        """Return the optional state attributes."""
-        return self._api.extra_attributes
 
 
 class AtwZoneSensor(MelDeviceSensor):
@@ -235,9 +227,9 @@ class AtwZoneSensor(MelDeviceSensor):
         """Initialize the sensor."""
         if zone.zone_index != 1:
             description.key = f"{description.key}-zone-{zone.zone_index}"
+        description.name = f"{zone.name} {description.name}"
         super().__init__(api, description)
         self._zone = zone
-        self._attr_name = f"{api.name} {zone.name} {description.name}"
 
     @property
     def native_value(self):

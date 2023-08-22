@@ -48,19 +48,16 @@ class AtwWaterHeater(CoordinatorEntity, WaterHeaterEntity):
         | WaterHeaterEntityFeature.OPERATION_MODE
     )
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_has_entity_name = True
+    _attr_name = None
 
     def __init__(self, api: MelCloudDevice, device: AtwDevice) -> None:
         """Initialize water heater device."""
         super().__init__(api.coordinator)
         self._api = api
         self._device = device
-        self._attr_name = api.name
         self._attr_unique_id = f"{device.serial}-WH"
-
-    @property
-    def device_info(self):
-        """Return a device description for device registry."""
-        return self._api.device_info
+        self._attr_device_info = api.device_info
 
     async def async_turn_on(self) -> None:
         """Turn the entity on."""

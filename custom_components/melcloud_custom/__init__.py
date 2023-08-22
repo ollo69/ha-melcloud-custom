@@ -211,7 +211,7 @@ class MelCloudDevice:
     def __init__(self, device: Device) -> None:
         """Construct a device wrapper."""
         self.device = device
-        self.name: str | None = device.name
+        self.name = device.name
         self._extra_attributes = None
         self._dev_conf = None
         self._coordinator: DataUpdateCoordinator | None = None
