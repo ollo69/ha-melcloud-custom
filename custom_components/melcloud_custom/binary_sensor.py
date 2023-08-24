@@ -67,6 +67,7 @@ class MelDeviceBinarySensor(CoordinatorEntity, BinarySensorEntity):
     """Representation of a Binary Sensor."""
 
     entity_description: MelcloudBinarySensorEntityDescription
+    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -78,20 +79,11 @@ class MelDeviceBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._api = api
         self.entity_description = description
 
-        self._attr_name = f"{api.name} {description.name}"
         self._attr_unique_id = f"{api.device.serial}-{api.device.mac}-{description.key}"
+        self._attr_device_info = api.device_info
+        self._attr_extra_state_attributes = api.extra_attributes
 
     @property
     def is_on(self):
         """Return the state of the binary sensor."""
         return self.entity_description.value_fn(self._api)
-
-    @property
-    def device_info(self):
-        """Return a device description for device registry."""
-        return self._api.device_info
-
-    @property
-    def extra_state_attributes(self):
-        """Return the optional state attributes."""
-        return self._api.extra_attributes

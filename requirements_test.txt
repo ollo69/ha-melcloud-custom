@@ -1,7 +1,7 @@
 # Strictly for tests
-pytest==7.1.3
+pytest==7.3.1
 #pytest-cov==2.9.0
 #pytest-homeassistant
-pytest-homeassistant-custom-component==0.12.21
+pytest-homeassistant-custom-component==0.13.42
 # From our manifest.json for our custom component
 pymelcloud==2.5.8
