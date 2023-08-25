@@ -113,13 +113,14 @@ class MelCloudClimate(CoordinatorEntity, ClimateEntity):
     """Base climate device."""
 
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_has_entity_name = True
+    _attr_name = None
 
     def __init__(self, device: MelCloudDevice):
         """Initialize the climate."""
         super().__init__(device.coordinator)
         self.api = device
         self._base_device = self.api.device
-        self._attr_device_info = device.device_info
 
     @property
     def target_temperature_step(self) -> float | None:
@@ -130,14 +131,12 @@ class MelCloudClimate(CoordinatorEntity, ClimateEntity):
 class AtaDeviceClimate(MelCloudClimate):
     """Air-to-Air climate device."""
 
-    _attr_has_entity_name = True
-    _attr_name = None
-
     def __init__(self, device: MelCloudDevice, ata_device: AtaDevice):
         """Initialize the climate."""
         super().__init__(device)
         self._device = ata_device
         self._attr_unique_id = f"{ata_device.serial}-{ata_device.mac}"
+        self._attr_device_info = device.device_info
 
         self._support_ver_swing = len(self._device.vane_vertical_positions) > 0
         self._support_hor_swing = len(self._device.vane_horizontal_positions) > 0
@@ -333,15 +332,15 @@ class AtwDeviceZoneClimate(MelCloudClimate):
     _attr_max_temp = 30
     _attr_min_temp = 10
     _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
-    _attr_has_entity_name = True
 
     def __init__(self, device: MelCloudDevice, atw_device: AtwDevice, atw_zone: Zone):
         """Initialize the climate."""
         super().__init__(device)
         self._device = atw_device
         self._zone = atw_zone
-        self._attr_name = atw_zone.name
+
         self._attr_unique_id = f"{atw_device.serial}-{atw_zone.zone_index}"
+        self._attr_device_info = device.zone_device_info(atw_zone)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
