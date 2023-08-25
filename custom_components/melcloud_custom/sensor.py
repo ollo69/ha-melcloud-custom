@@ -268,8 +268,9 @@ class AtwZoneSensor(MelDeviceSensor):
         """Initialize the sensor."""
         if zone.zone_index != 1:
             description.key = f"{description.key}-zone-{zone.zone_index}"
-        description.name = f"{zone.name} {description.name}"
         super().__init__(api, description)
+
+        self._attr_device_info = api.zone_device_info(zone)
         self._zone = zone
 
     @property

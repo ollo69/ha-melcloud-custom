@@ -9,6 +9,7 @@ from typing import Any, Dict, Optional
 from aiohttp import ClientConnectionError, ClientResponseError
 from async_timeout import timeout
 from pymelcloud import Device, get_devices
+from pymelcloud.atw_device import Zone
 from pymelcloud.client import BASE_URL
 import voluptuous as vol
 
@@ -327,10 +328,10 @@ class MelCloudDevice:
     def device_info(self) -> DeviceInfo:
         """Return a device description for device registry."""
         _device_info = DeviceInfo(
+            connections={(CONNECTION_NETWORK_MAC, self.device.mac)},
             identifiers={(DOMAIN, f"{self.device.mac}-{self.device.serial}")},
             manufacturer="Mitsubishi Electric",
             name=self.name,
-            connections={(CONNECTION_NETWORK_MAC, self.device.mac)},
         )
         model = f"MELCloud IF (MAC: {self.device.mac})"
         unit_infos = self.device.units
@@ -343,6 +344,18 @@ class MelCloudDevice:
         _device_info[ATTR_MODEL] = model
 
         return _device_info
+
+    def zone_device_info(self, zone: Zone) -> DeviceInfo:
+        """Return a zone device description for device registry."""
+        dev = self.device
+        return DeviceInfo(
+            connections={(CONNECTION_NETWORK_MAC, dev.mac)},
+            identifiers={(DOMAIN, f"{dev.mac}-{dev.serial}-{zone.zone_index}")},
+            manufacturer="Mitsubishi Electric",
+            model="ATW zone device",
+            name=f"{self.name} {zone.name}",
+            via_device=(DOMAIN, f"{dev.mac}-{dev.serial}"),
+        )
 
     @property
     def extra_attributes(self):
