@@ -94,13 +94,15 @@ class MelCloudAuthentication:
         self._context_key = None
         session = async_get_clientsession(hass)
 
+        null = None
+        true = True
         body = {
             "Email": self._email,
             "Password": self._password,
             "Language": self._language,
             "AppVersion": "1.19.1.1",
-            "Persist": True,
-            "CaptchaResponse": None,
+            "Persist": true,
+            "CaptchaResponse": null,
         }
 
         async with session.post(
