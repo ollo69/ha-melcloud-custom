@@ -52,7 +52,7 @@ ATTR_STATE_DEVICE_UNIT = [
 
 _LOGGER = logging.getLogger(__name__)
 
-SCAN_INTERVAL = timedelta(seconds=60)
+SCAN_INTERVAL = timedelta(minutes=15)
 
 PLATFORMS = [
     Platform.BINARY_SENSOR,
@@ -361,8 +361,8 @@ async def mel_devices_setup(
             all_devices = await get_devices(
                 token,
                 session,
-                conf_update_interval=timedelta(minutes=5),
-                device_set_debounce=timedelta(seconds=1),
+                conf_update_interval=timedelta(minutes=30),
+                device_set_debounce=timedelta(seconds=2),
             )
     except (asyncio.TimeoutError, ClientConnectionError, ClientResponseError) as ex:
         raise ConfigEntryNotReady() from ex
