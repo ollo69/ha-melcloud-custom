@@ -1,11 +1,11 @@
 """Config flow for the MELCloud platform."""
 
-from aiohttp import ClientError, ClientResponseError
 import asyncio
-from async_timeout import timeout
 from http import HTTPStatus
 import logging
 
+from aiohttp import ClientError, ClientResponseError
+from async_timeout import timeout
 import pymelcloud
 import voluptuous as vol
 
@@ -25,12 +25,12 @@ from homeassistant.helpers.schema_config_entry_flow import (
 )
 
 from . import MELCLOUD_SCHEMA, MelCloudAuthentication
-from .const import (
+from .const import (  # pylint: disable=unused-import
     CONF_LANGUAGE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     LANGUAGES,
-)  # pylint: disable=unused-import
+)
 
 _LOGGER = logging.getLogger(__name__)
 
