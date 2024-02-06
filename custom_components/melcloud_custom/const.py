@@ -9,6 +9,8 @@ ATTR_STATUS = "status"
 ATTR_VANE_VERTICAL = "vane_vertical"
 ATTR_VANE_HORIZONTAL = "vane_horizontal"
 
+DEFAULT_SCAN_INTERVAL = 900
+
 
 class HorSwingModes:
     """Horizontal swing modes names."""
