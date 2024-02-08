@@ -1,4 +1,5 @@
 """Support for MelCloud device sensors."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -74,17 +75,6 @@ ATA_SENSORS: tuple[MelcloudSensorEntityDescription, ...] = (
         enabled=lambda x: x.device.has_energy_consumed_meter,
         entity_registry_enabled_default=False,
     ),
-    MelcloudSensorEntityDescription(
-        key="daily_energy",
-        name="Daily Energy Consumed",
-        icon="mdi:factory",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        value_fn=lambda x: x.device.daily_energy_consumed,
-        enabled=lambda x: True,
-        entity_registry_enabled_default=False,
-    ),
 )
 ATW_SENSORS: tuple[MelcloudSensorEntityDescription, ...] = (
     MelcloudSensorEntityDescription(
@@ -158,17 +148,6 @@ ATW_SENSORS: tuple[MelcloudSensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda x: x.device.tank_temperature,
         enabled=lambda x: x.device_info.get("HasHotWaterTank", False),
-    ),
-    MelcloudSensorEntityDescription(
-        key="daily_energy",
-        name="Daily Energy Consumed",
-        icon="mdi:factory",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        value_fn=lambda x: x.device.daily_energy_consumed,
-        enabled=lambda x: True,
-        entity_registry_enabled_default=False,
     ),
 )
 ATW_ZONE_SENSORS: tuple[MelcloudSensorEntityDescription, ...] = (

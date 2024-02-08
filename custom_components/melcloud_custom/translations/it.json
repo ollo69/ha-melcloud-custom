@@ -20,5 +20,14 @@
                 "title": "Connettersi a MELCloud"
             }
         }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "data": {
+                    "scan_interval": "Secondi di attesa tra le chiamate ai servizi MelCloud"
+                }
+            }
+        }
     }
 }

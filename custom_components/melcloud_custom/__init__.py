@@ -1,4 +1,5 @@
 """The MELCloud Climate integration."""
+
 from __future__ import annotations
 
 import asyncio
@@ -17,6 +18,7 @@ from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.const import (
     ATTR_MODEL,
     CONF_PASSWORD,
+    CONF_SCAN_INTERVAL,
     CONF_TOKEN,
     CONF_USERNAME,
     Platform,
@@ -29,7 +31,14 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import CONF_LANGUAGE, DOMAIN, LANGUAGES, MEL_DEVICES, Language
+from .const import (
+    CONF_LANGUAGE,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    LANGUAGES,
+    MEL_DEVICES,
+    Language,
+)
 
 ATTR_STATE_DEVICE_ID = "device_id"
 ATTR_STATE_DEVICE_SERIAL = "device_serial"
@@ -183,7 +192,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     else:
         token = conf[CONF_TOKEN]
 
-    mel_devices = await mel_devices_setup(hass, token)
+    update_seconds = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+    _LOGGER.info("Configured scan interval: %s seconds", update_seconds)
+
+    mel_devices = await mel_devices_setup(
+        hass, token, timedelta(seconds=update_seconds)
+    )
+
+    entry.async_on_unload(entry.add_update_listener(update_listener))
     hass.data.setdefault(DOMAIN, {}).setdefault(entry.entry_id, {}).update(
         {
             MEL_DEVICES: mel_devices,
@@ -206,6 +222,20 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     return unload_ok
 
 
+async def update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Update when config_entry options update."""
+    update_seconds = entry.options[CONF_SCAN_INTERVAL]
+    update_interval = timedelta(seconds=update_seconds)
+    _LOGGER.info("Setting update interval to %s seconds", update_seconds)
+
+    mel_devices: dict[str, list[MelCloudDevice]] = hass.data[DOMAIN][
+        entry.entry_id
+    ].get(MEL_DEVICES, {})
+    for mel_devices_type in mel_devices.values():
+        for mel_device in mel_devices_type:
+            mel_device.set_coordinator_update_interval(update_interval)
+
+
 class MelCloudDevice:
     """MELCloud Device instance."""
 
@@ -224,7 +254,9 @@ class MelCloudDevice:
         self._energy_report = None
         await self.device.update()
 
-    async def async_create_coordinator(self, hass: HomeAssistant) -> None:
+    async def async_create_coordinator(
+        self, hass: HomeAssistant, update_interval: timedelta
+    ) -> None:
         """Get the coordinator for a specific device."""
         if self._coordinator:
             return
@@ -235,10 +267,16 @@ class MelCloudDevice:
             name=f"{DOMAIN}-{self.name or self.device_id}",
             update_method=self._async_update,
             # Polling interval. Will only be polled if there are subscribers.
-            update_interval=SCAN_INTERVAL,
+            update_interval=update_interval,
         )
         await coordinator.async_refresh()
         self._coordinator = coordinator
+
+    def set_coordinator_update_interval(self, update_interval: timedelta):
+        """Update coordinator update interval."""
+        if self._coordinator:
+            self._coordinator.update_interval = update_interval
+            self._coordinator.async_set_updated_data(None)
 
     async def async_set(self, properties: Dict[str, Any]):
         """Write state changes to the MELCloud API."""
@@ -333,14 +371,10 @@ class MelCloudDevice:
             manufacturer="Mitsubishi Electric",
             name=self.name,
         )
-        model = f"MELCloud IF (MAC: {self.device.mac})"
-        unit_infos = self.device.units
-        if unit_infos is not None:
-            model = (
-                model
-                + " - "
-                + ", ".join([x["model"] for x in unit_infos if x["model"]])
-            )
+        if (unit_infos := self.device.units) is not None:
+            model = ", ".join([x["model"] for x in unit_infos if x["model"]])
+        else:
+            model = "MELCloud IF"
         _device_info[ATTR_MODEL] = model
 
         return _device_info
@@ -385,7 +419,7 @@ class MelCloudDevice:
 
 
 async def mel_devices_setup(
-    hass: HomeAssistant, token: str
+    hass: HomeAssistant, token: str, update_interval: timedelta
 ) -> dict[str, list[MelCloudDevice]]:
     """Query connected devices from MELCloud."""
     session = async_get_clientsession(hass)
@@ -405,7 +439,7 @@ async def mel_devices_setup(
         wrapped_types = []
         for device in devices:
             mel_device = MelCloudDevice(device)
-            await mel_device.async_create_coordinator(hass)
+            await mel_device.async_create_coordinator(hass, update_interval)
             wrapped_types.append(mel_device)
         wrapped_devices[device_type] = wrapped_types
     return wrapped_devices

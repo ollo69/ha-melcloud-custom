@@ -1,4 +1,5 @@
 """Config flow for the MELCloud platform."""
+
 import asyncio
 from http import HTTPStatus
 import logging
@@ -6,16 +7,48 @@ import logging
 from aiohttp import ClientError, ClientResponseError
 from async_timeout import timeout
 import pymelcloud
+import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_PASSWORD, CONF_TOKEN, CONF_USERNAME
+from homeassistant.const import (
+    CONF_PASSWORD,
+    CONF_SCAN_INTERVAL,
+    CONF_TOKEN,
+    CONF_USERNAME,
+)
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.schema_config_entry_flow import (
+    SchemaCommonFlowHandler,
+    SchemaFlowFormStep,
+    SchemaOptionsFlowHandler,
+)
 
 from . import MELCLOUD_SCHEMA, MelCloudAuthentication
-from .const import CONF_LANGUAGE, DOMAIN, LANGUAGES  # pylint: disable=unused-import
+from .const import (  # pylint: disable=unused-import
+    CONF_LANGUAGE,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    LANGUAGES,
+)
 
 _LOGGER = logging.getLogger(__name__)
+
+
+async def get_options_schema(handler: SchemaCommonFlowHandler) -> vol.Schema:
+    """Get options schema."""
+    return vol.Schema(
+        {
+            vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): vol.All(
+                vol.Coerce(int), vol.Clamp(min=60, max=1800)
+            ),
+        }
+    )
+
+
+OPTIONS_FLOW = {
+    "init": SchemaFlowFormStep(get_options_schema),
+}
 
 
 class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -93,3 +126,11 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=MELCLOUD_SCHEMA,
             errors=errors if errors else {},
         )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> SchemaOptionsFlowHandler:
+        """Get options flow for this handler."""
+        return SchemaOptionsFlowHandler(config_entry, OPTIONS_FLOW)

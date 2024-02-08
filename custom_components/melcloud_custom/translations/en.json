@@ -20,6 +20,15 @@
                 "title": "Connect to MELCloud"
             }
         }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "data": {
+                    "scan_interval": "Seconds between requests to MelCloud services"
+                }
+            }
+        }
     }
 }
 
