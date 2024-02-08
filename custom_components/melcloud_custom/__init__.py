@@ -338,14 +338,10 @@ class MelCloudDevice:
             manufacturer="Mitsubishi Electric",
             name=self.name,
         )
-        model = f"MELCloud IF (MAC: {self.device.mac})"
-        unit_infos = self.device.units
-        if unit_infos is not None:
-            model = (
-                model
-                + " - "
-                + ", ".join([x["model"] for x in unit_infos if x["model"]])
-            )
+        if (unit_infos := self.device.units) is not None:
+            model = ", ".join([x["model"] for x in unit_infos if x["model"]])
+        else:
+            model = "MELCloud IF"
         _device_info[ATTR_MODEL] = model
 
         return _device_info
