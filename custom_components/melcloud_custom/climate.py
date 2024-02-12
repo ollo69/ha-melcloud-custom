@@ -303,7 +303,7 @@ class AtaDeviceClimate(MelCloudClimate):
         await self.api.async_set({PROPERTY_POWER: False})
 
     @property
-    def supported_features(self) -> int:
+    def supported_features(self) -> ClimateEntityFeature:
         """Return the list of supported features."""
         supp_feature = (
             ClimateEntityFeature.FAN_MODE | ClimateEntityFeature.TARGET_TEMPERATURE
