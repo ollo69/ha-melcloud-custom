@@ -1,4 +1,5 @@
 """Platform for climate integration."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -19,6 +20,7 @@ from homeassistant.components.climate.const import (
     DEFAULT_MAX_TEMP,
     DEFAULT_MIN_TEMP,
     ClimateEntityFeature,
+    HVACAction,
     HVACMode,
     HVACAction,
 )
@@ -38,19 +40,17 @@ from .const import (
     VertSwingModes,
 )
 
-ATA_HVAC_MODE_LOOKUP: dict[str, HVACMode] = {
+ATA_HVAC_MODE_LOOKUP = {
     ata.OPERATION_MODE_HEAT: HVACMode.HEAT,
     ata.OPERATION_MODE_DRY: HVACMode.DRY,
     ata.OPERATION_MODE_COOL: HVACMode.COOL,
     ata.OPERATION_MODE_FAN_ONLY: HVACMode.FAN_ONLY,
     ata.OPERATION_MODE_HEAT_COOL: HVACMode.HEAT_COOL,
 }
-ATA_HVAC_MODE_REVERSE_LOOKUP: dict[HVACMode, str] = {
-    v: k for k, v in ATA_HVAC_MODE_LOOKUP.items()
-}
+ATA_HVAC_MODE_REVERSE_LOOKUP = {v: k for k, v in ATA_HVAC_MODE_LOOKUP.items()}
 
 
-ATA_HVAC_VVANE_LOOKUP: dict[str, str] = {
+ATA_HVAC_VVANE_LOOKUP = {
     ata.V_VANE_POSITION_AUTO: VertSwingModes.Auto,
     ata.V_VANE_POSITION_1: VertSwingModes.Top,
     ata.V_VANE_POSITION_2: VertSwingModes.MiddleTop,
@@ -59,12 +59,10 @@ ATA_HVAC_VVANE_LOOKUP: dict[str, str] = {
     ata.V_VANE_POSITION_5: VertSwingModes.Bottom,
     ata.V_VANE_POSITION_SWING: VertSwingModes.Swing,
 }
-ATA_HVAC_VVANE_REVERSE_LOOKUP: dict[str, str] = {
-    v: k for k, v in ATA_HVAC_VVANE_LOOKUP.items()
-}
+ATA_HVAC_VVANE_REVERSE_LOOKUP = {v: k for k, v in ATA_HVAC_VVANE_LOOKUP.items()}
 
 
-ATA_HVAC_HVANE_LOOKUP: dict[str, str] = {
+ATA_HVAC_HVANE_LOOKUP = {
     ata.H_VANE_POSITION_AUTO: HorSwingModes.Auto,
     ata.H_VANE_POSITION_1: HorSwingModes.Left,
     ata.H_VANE_POSITION_2: HorSwingModes.MiddleLeft,
@@ -74,9 +72,7 @@ ATA_HVAC_HVANE_LOOKUP: dict[str, str] = {
     ata.H_VANE_POSITION_SPLIT: HorSwingModes.Split,
     ata.H_VANE_POSITION_SWING: HorSwingModes.Swing,
 }
-ATA_HVAC_HVANE_REVERSE_LOOKUP: dict[str, str] = {
-    v: k for k, v in ATA_HVAC_HVANE_LOOKUP.items()
-}
+ATA_HVAC_HVANE_REVERSE_LOOKUP = {v: k for k, v in ATA_HVAC_HVANE_LOOKUP.items()}
 
 ATW_ZONE_HVAC_STATE_LOOKUP: dict[str, HVACMode] = {
     atw.ZONE_STATUS_HEAT: HVACAction.HEATING,
@@ -84,12 +80,22 @@ ATW_ZONE_HVAC_STATE_LOOKUP: dict[str, HVACMode] = {
     atw.ZONE_STATUS_IDLE: HVACAction.IDLE,
 }
 
-ATW_ZONE_HVAC_MODE_LOOKUP: dict[str, HVACMode] = {
+ATW_ZONE_HVAC_MODE_LOOKUP = {
     atw.ZONE_OPERATION_MODE_HEAT: HVACMode.HEAT,
     atw.ZONE_OPERATION_MODE_COOL: HVACMode.COOL,
 }
-ATW_ZONE_HVAC_MODE_REVERSE_LOOKUP: dict[HVACMode, str] = {
-    v: k for k, v in ATW_ZONE_HVAC_MODE_LOOKUP.items()
+ATW_ZONE_HVAC_MODE_REVERSE_LOOKUP = {v: k for k, v in ATW_ZONE_HVAC_MODE_LOOKUP.items()}
+
+ATW_ZONE_HVAC_ACTION_LOOKUP = {
+    atw.STATUS_IDLE: HVACAction.IDLE,
+    atw.STATUS_HEAT_ZONES: HVACAction.HEATING,
+    atw.STATUS_COOL: HVACAction.COOLING,
+    atw.STATUS_STANDBY: HVACAction.IDLE,
+    # Heating water tank, so the zone is idle
+    atw.STATUS_HEAT_WATER: HVACAction.IDLE,
+    atw.STATUS_LEGIONELLA: HVACAction.IDLE,
+    # Heat pump cannot heat in this mode, but will be ready soon
+    atw.STATUS_DEFROST: HVACAction.PREHEATING,
 }
 
 
@@ -303,7 +309,7 @@ class AtaDeviceClimate(MelCloudClimate):
         await self.api.async_set({PROPERTY_POWER: False})
 
     @property
-    def supported_features(self) -> int:
+    def supported_features(self) -> ClimateEntityFeature:
         """Return the list of supported features."""
         supp_feature = (
             ClimateEntityFeature.FAN_MODE | ClimateEntityFeature.TARGET_TEMPERATURE
@@ -399,6 +405,13 @@ class AtwDeviceZoneClimate(MelCloudClimate):
     def hvac_modes(self) -> list[HVACMode]:
         """Return the list of available hvac operation modes."""
         return [self.hvac_mode]
+
+    @property
+    def hvac_action(self) -> HVACAction | None:
+        """Return the current running hvac operation."""
+        if not self._device.power:
+            return HVACAction.OFF
+        return ATW_ZONE_HVAC_ACTION_LOOKUP.get(self._device.status)
 
     @property
     def current_temperature(self) -> float | None:
