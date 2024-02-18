@@ -8,7 +8,6 @@ import logging
 from typing import Any, Dict, Optional
 
 from aiohttp import ClientConnectionError, ClientResponseError
-from async_timeout import timeout
 from pymelcloud import Device, get_devices
 from pymelcloud.atw_device import Zone
 from pymelcloud.client import BASE_URL
@@ -156,7 +155,7 @@ async def _async_migrate_config(
 
     mcauth = MelCloudAuthentication(username, conf[CONF_PASSWORD], mc_language)
     try:
-        async with timeout(10):
+        async with asyncio.timeout(10):
             if not await mcauth.login(hass):
                 raise ConfigEntryNotReady()
     except Exception as ex:
@@ -391,7 +390,7 @@ async def mel_devices_setup(
     """Query connected devices from MELCloud."""
     session = async_get_clientsession(hass)
     try:
-        async with timeout(10):
+        async with asyncio.timeout(10):
             all_devices = await get_devices(
                 token,
                 session,
