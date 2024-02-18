@@ -1,6 +1,5 @@
 # Strictly for tests
 pytest==7.4.3
-pip>=21.0,<23.2
 #pytest-cov==2.9.0
 #pytest-homeassistant
 pytest-homeassistant-custom-component==0.13.85
