@@ -2,12 +2,15 @@
 
 import asyncio
 from http import HTTPStatus
-from unittest.mock import AsyncMock, patch
 
 from aiohttp import ClientError, ClientResponseError
 import pymelcloud
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    AsyncMock,
+    MockConfigEntry,
+    patch,
+)
 
 from homeassistant import config_entries, data_entry_flow
 
