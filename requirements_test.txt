@@ -2,6 +2,6 @@
 pytest==7.4.3
 #pytest-cov==2.9.0
 #pytest-homeassistant
-pytest-homeassistant-custom-component==0.13.85
+pytest-homeassistant-custom-component==0.13.77
 # From our manifest.json for our custom component
 pymelcloud==2.5.9

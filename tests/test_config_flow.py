@@ -2,15 +2,12 @@
 
 import asyncio
 from http import HTTPStatus
+from unittest.mock import AsyncMock, patch
 
 from aiohttp import ClientError, ClientResponseError
 import pymelcloud
 import pytest
-from pytest_homeassistant_custom_component.common import (
-    AsyncMock,
-    MockConfigEntry,
-    patch,
-)
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from homeassistant import config_entries, data_entry_flow
 
@@ -38,7 +35,7 @@ PATCH_SETUP_ENTRY = patch(
 def mock_controller_connect():
     """Mock a successful connection."""
     with patch(
-        "custom_components.melcloud_custom.config_flow.MelCloudAuthentication"
+        "custom_components.melcloud_custom.config_flow.MelCloudAuthentication",
     ) as service_mock:
         service_mock.return_value.login = AsyncMock(return_value=True)
         service_mock.return_value.auth_token = "test-token"
