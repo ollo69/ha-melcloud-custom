@@ -35,7 +35,7 @@ PATCH_SETUP_ENTRY = patch(
 def mock_controller_connect():
     """Mock a successful connection."""
     with patch(
-        "custom_components.melcloud_custom.config_flow.MelCloudAuthentication",
+        "custom_components.melcloud_custom.config_flow.MelCloudAuthentication"
     ) as service_mock:
         service_mock.return_value.login = AsyncMock(return_value=True)
         service_mock.return_value.auth_token = "test-token"
