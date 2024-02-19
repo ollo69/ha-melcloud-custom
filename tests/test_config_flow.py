@@ -1,9 +1,8 @@
 """Test the MELCloud config flow."""
 
-from unittest.mock import AsyncMock, patch
-
 import asyncio
 from http import HTTPStatus
+from unittest.mock import AsyncMock, patch
 
 from aiohttp import ClientError, ClientResponseError
 import pymelcloud
