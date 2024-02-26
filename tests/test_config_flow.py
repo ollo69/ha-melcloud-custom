@@ -1,4 +1,5 @@
 """Test the MELCloud config flow."""
+
 import asyncio
 from http import HTTPStatus
 from unittest.mock import AsyncMock, patch
@@ -41,7 +42,7 @@ def mock_controller_connect():
         yield service_mock
 
 
-@pytest.fixture
+@pytest.fixture(name="get_devices")
 def mock_get_devices():
     """Mock pymelcloud get_devices."""
     with patch(
@@ -54,7 +55,7 @@ def mock_get_devices():
         yield mock
 
 
-@pytest.fixture
+@pytest.fixture(name="request_info")
 def mock_request_info():
     """Mock RequestInfo to create ClientResponseErrors."""
     with patch("aiohttp.RequestInfo") as mock_ri:
@@ -62,7 +63,7 @@ def mock_request_info():
         yield mock_ri
 
 
-async def test_form(hass, connect, mock_get_devices):
+async def test_form(hass, connect, get_devices):
     """Test we get the form."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -91,13 +92,18 @@ async def test_form(hass, connect, mock_get_devices):
 )
 async def test_form_errors(hass, connect, error, reason):
     """Test we handle cannot connect error."""
-    connect.return_value.login = AsyncMock(side_effect=error)
-
-    result = await hass.config_entries.flow.async_init(
+    flow_result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": config_entries.SOURCE_USER},
-        data=CONFIG_DATA,
     )
+    assert flow_result["type"] == data_entry_flow.FlowResultType.FORM
+
+    connect.return_value.login = AsyncMock(side_effect=error)
+
+    result = await hass.config_entries.flow.async_configure(
+        flow_result["flow_id"], user_input=CONFIG_DATA
+    )
+    await hass.async_block_till_done()
 
     assert result["type"] == data_entry_flow.FlowResultType.FORM
     assert result["errors"] == {"base": reason}
@@ -111,23 +117,28 @@ async def test_form_errors(hass, connect, error, reason):
         (HTTPStatus.INTERNAL_SERVER_ERROR, "cannot_connect"),
     ],
 )
-async def test_form_response_errors(hass, connect, mock_request_info, error, message):
+async def test_form_response_errors(hass, connect, request_info, error, message):
     """Test we handle response errors."""
-    connect.return_value.login = AsyncMock(
-        side_effect=ClientResponseError(mock_request_info(), (), status=error)
-    )
-
-    result = await hass.config_entries.flow.async_init(
+    flow_result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": config_entries.SOURCE_USER},
-        data=CONFIG_DATA,
     )
+    assert flow_result["type"] == data_entry_flow.FlowResultType.FORM
+
+    connect.return_value.login = AsyncMock(
+        side_effect=ClientResponseError(request_info(), (), status=error)
+    )
+
+    result = await hass.config_entries.flow.async_configure(
+        flow_result["flow_id"], user_input=CONFIG_DATA
+    )
+    await hass.async_block_till_done()
 
     assert result["type"] == data_entry_flow.FlowResultType.FORM
     assert result["errors"] == {"base": message}
 
 
-async def test_import_with_token(hass, connect, mock_get_devices):
+async def test_import_with_token(hass, connect, get_devices):
     """Test successful import."""
     with PATCH_SETUP as mock_setup, PATCH_SETUP_ENTRY as mock_setup_entry:
         result = await hass.config_entries.flow.async_init(
@@ -146,7 +157,7 @@ async def test_import_with_token(hass, connect, mock_get_devices):
     assert len(mock_setup_entry.mock_calls) == 1
 
 
-async def test_token_refresh(hass, connect, mock_get_devices):
+async def test_token_refresh(hass, connect, get_devices):
     """Re-configuration with existing username should refresh token."""
     mock_entry = MockConfigEntry(
         domain=DOMAIN,
