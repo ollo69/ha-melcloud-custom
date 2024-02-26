@@ -35,6 +35,7 @@ async def async_setup_entry(
         [
             AtwWaterHeater(mel_device, mel_device.device)
             for mel_device in mel_devices[DEVICE_TYPE_ATW]
+            if mel_device.device_info.get("HasHotWaterTank", False)
         ],
         True,
     )

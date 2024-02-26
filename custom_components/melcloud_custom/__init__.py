@@ -244,11 +244,13 @@ class MelCloudDevice:
         self.name = device.name
         self._extra_attributes = None
         self._dev_conf = None
+        self._energy_report = None
         self._coordinator: DataUpdateCoordinator | None = None
 
     async def _async_update(self):
         """Pull the latest data from MELCloud."""
         self._dev_conf = None
+        self._energy_report = None
         await self.device.update()
 
     async def async_create_coordinator(
@@ -301,6 +303,17 @@ class MelCloudDevice:
         return self.device.building_id
 
     @property
+    def energy_report(self):
+        """Return energy_report of the device."""
+        if self._energy_report is None:
+            energy_report = self.device._energy_report
+            if energy_report is None:
+                self._energy_report = {}
+            else:
+                self._energy_report = energy_report
+        return self._energy_report
+
+    @property
     def device_conf(self):
         """Return device_conf of the device."""
         if self._dev_conf is None:
@@ -310,6 +323,26 @@ class MelCloudDevice:
             else:
                 self._dev_conf = dev_conf.get("Device", {})
         return self._dev_conf
+
+    @property
+    def daily_heating_energy_consumed(self) -> Optional[int]:
+        """Return wifi signal."""
+        return self.device_conf.get("DailyHeatingEnergyConsumed")
+
+    @property
+    def daily_heating_energy_produced(self) -> Optional[int]:
+        """Return wifi signal."""
+        return self.device_conf.get("DailyHeatingEnergyProduced")
+
+    @property
+    def daily_cooling_energy_consumed(self) -> Optional[int]:
+        """Return wifi signal."""
+        return self.device_conf.get("DailyCoolingEnergyConsumed")
+
+    @property
+    def daily_cooling_energy_produced(self) -> Optional[int]:
+        """Return wifi signal."""
+        return self.device_conf.get("DailyCoolingEnergyProduced")
 
     @property
     def wifi_signal(self) -> Optional[int]:
