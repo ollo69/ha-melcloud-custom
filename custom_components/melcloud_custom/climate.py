@@ -121,6 +121,7 @@ class MelCloudClimate(CoordinatorEntity, ClimateEntity):
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_has_entity_name = True
     _attr_name = None
+    _enable_turn_on_off_backwards_compatibility = False
 
     def __init__(self, device: MelCloudDevice):
         """Initialize the climate."""
@@ -147,6 +148,20 @@ class AtaDeviceClimate(MelCloudClimate):
         self._support_ver_swing = len(self._device.vane_vertical_positions) > 0
         self._support_hor_swing = len(self._device.vane_horizontal_positions) > 0
         self._set_hor_swing = self._support_hor_swing and not self._support_ver_swing
+
+    @property
+    def supported_features(self) -> ClimateEntityFeature:
+        """Return the list of supported features."""
+        supp_feature = (
+            ClimateEntityFeature.FAN_MODE
+            | ClimateEntityFeature.TARGET_TEMPERATURE
+            | ClimateEntityFeature.TURN_OFF
+            | ClimateEntityFeature.TURN_ON
+        )
+        if self._support_ver_swing or self._support_hor_swing:
+            supp_feature |= ClimateEntityFeature.SWING_MODE
+
+        return supp_feature
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
@@ -301,17 +316,6 @@ class AtaDeviceClimate(MelCloudClimate):
     async def async_turn_off(self) -> None:
         """Turn the entity off."""
         await self.api.async_set({PROPERTY_POWER: False})
-
-    @property
-    def supported_features(self) -> ClimateEntityFeature:
-        """Return the list of supported features."""
-        supp_feature = (
-            ClimateEntityFeature.FAN_MODE | ClimateEntityFeature.TARGET_TEMPERATURE
-        )
-        if self._support_ver_swing or self._support_hor_swing:
-            supp_feature |= ClimateEntityFeature.SWING_MODE
-
-        return supp_feature
 
     @property
     def min_temp(self) -> float:
