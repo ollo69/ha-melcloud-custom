@@ -41,4 +41,4 @@ jobs:
             -n auto \
             -o console_output_style=count \
             -p no:sugar \
-            tests
+            tests --asyncio-mode=auto
