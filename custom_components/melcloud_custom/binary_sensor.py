@@ -1,4 +1,5 @@
 """Support for MelCloud device binary sensors."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,6 +13,9 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import MelCloudDevice
@@ -46,7 +50,9 @@ ATA_BINARY_SENSORS: tuple[MelcloudBinarySensorEntityDescription, ...] = (
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+):
     """Set up MELCloud device binary sensors based on config_entry."""
     entry_config = hass.data[DOMAIN][entry.entry_id]
 

@@ -1,4 +1,5 @@
 """Platform for water_heater integration."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -46,6 +47,7 @@ class AtwWaterHeater(CoordinatorEntity, WaterHeaterEntity):
 
     _attr_supported_features = (
         WaterHeaterEntityFeature.TARGET_TEMPERATURE
+        | WaterHeaterEntityFeature.ON_OFF
         | WaterHeaterEntityFeature.OPERATION_MODE
     )
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
@@ -60,11 +62,11 @@ class AtwWaterHeater(CoordinatorEntity, WaterHeaterEntity):
         self._attr_unique_id = f"{device.serial}-WH"
         self._attr_device_info = api.device_info
 
-    async def async_turn_on(self) -> None:
+    async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the entity on."""
         await self._api.async_set({PROPERTY_POWER: True})
 
-    async def async_turn_off(self) -> None:
+    async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the entity off."""
         await self._api.async_set({PROPERTY_POWER: False})
 
