@@ -13,7 +13,7 @@ As consequence I no longer have a way to maintain this integration, fixing bug, 
 
 If anyone is interested in taking charge of it, they can possibly fork this repository and I will report the new reference link here in the notes.
 
-**This repository will be shortly moved in state `archived`.
+**This repository will be shortly moved in state `archived`.**
 
 ## Description
 A full featured Homeassistant custom component to drive MELCloud ATA and ATW devices.
